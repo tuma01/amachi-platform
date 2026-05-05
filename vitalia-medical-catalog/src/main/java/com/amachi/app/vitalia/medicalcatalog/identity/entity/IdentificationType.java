@@ -37,9 +37,9 @@ public class IdentificationType extends Auditable<String> implements Model {
     @Column(name = "NAME", nullable = false, length = 100)
     private String name; // e.g., Cédula de Ciudadanía, Pasaporte
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

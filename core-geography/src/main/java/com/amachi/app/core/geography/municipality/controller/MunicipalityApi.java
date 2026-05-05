@@ -16,8 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-import static com.amachi.app.core.common.controller.BaseController.ALL;
-import static com.amachi.app.core.common.controller.BaseController.ID;
+import com.amachi.app.core.common.controller.BaseController;
 
 @Tag(name = "Municipality", description = "REST API to manage municipality details: create, update, fetch and delete.")
 public interface MunicipalityApi extends GenericApi<MunicipalityDto> {
@@ -34,7 +33,7 @@ public interface MunicipalityApi extends GenericApi<MunicipalityDto> {
                     @ApiResponse(responseCode = "500", description = "Internal server error.")
             }
     )
-    @GetMapping(value = ID, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = BaseController.ID, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<MunicipalityDto> getMunicipalityById(
             @Parameter(description = "ID of the " + NAME_API + " to retrieve", required = true)
             @PathVariable("id") @NonNull Long id
@@ -65,7 +64,7 @@ public interface MunicipalityApi extends GenericApi<MunicipalityDto> {
                     @ApiResponse(responseCode = "500", description = "Internal server error.")
             }
     )
-    @PutMapping(value = ID, produces = MediaType.APPLICATION_JSON_VALUE)
+    @PutMapping(value = BaseController.ID, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<MunicipalityDto> updateMunicipality(
             @Parameter(description = "ID of the " + NAME_API + " to update.", required = true)
             @PathVariable("id") @NonNull Long id,
@@ -83,7 +82,7 @@ public interface MunicipalityApi extends GenericApi<MunicipalityDto> {
                     @ApiResponse(responseCode = "500", description = "Internal server error.")
             }
     )
-    @DeleteMapping(value = ID, produces = MediaType.APPLICATION_JSON_VALUE)
+    @DeleteMapping(value = BaseController.ID, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<Void> deleteMunicipality(
             @Parameter(description = "ID of the " + NAME_API + " to delete.", required = true)
             @PathVariable("id") @NonNull Long id
@@ -97,7 +96,7 @@ public interface MunicipalityApi extends GenericApi<MunicipalityDto> {
                     @ApiResponse(responseCode = "500", description = "Internal server error.")
             }
     )
-    @GetMapping(value = ALL, produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = BaseController.ALL, produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<List<MunicipalityDto>> getAllMunicipalities();
 
     @Operation(

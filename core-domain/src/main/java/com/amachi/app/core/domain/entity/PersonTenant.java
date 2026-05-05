@@ -1,13 +1,14 @@
 package com.amachi.app.core.domain.entity;
-import com.amachi.app.core.common.entity.BaseTenantEntity;
 import com.amachi.app.core.common.entity.Model;
 import com.amachi.app.core.common.entity.SoftDeletable;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.common.enums.RelationStatus;
 import com.amachi.app.core.common.enums.RoleContext;
 import jakarta.persistence.*;
-import lombok.*;
 import lombok.experimental.SuperBuilder;
+import lombok.*;
+import org.hibernate.envers.Audited;
+
 
 import java.time.LocalDateTime;
 
@@ -18,21 +19,13 @@ import java.time.LocalDateTime;
                         name = "UK_PERSON_TENANT_ROLE_CONTEXT",
                         columnNames = {"FK_ID_PERSON", "FK_ID_TENANT", "ROLE_CONTEXT", "IS_DELETED"})
         })
-@Getter @Setter
+@Getter
+@SuperBuilder @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+@Audited
 @EqualsAndHashCode(callSuper = true)
-public class PersonTenant extends BaseTenantEntity implements Model, SoftDeletable {
-
-    @Column(name = "IS_DELETED", nullable = false)
-    @Builder.Default
-    private Boolean isDeleted = false;
-
-    @Override
-    public void delete() {
-        this.isDeleted = true;
-    }
+public class PersonTenant extends AuditableTenantEntity implements Model {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,10 +56,4 @@ public class PersonTenant extends BaseTenantEntity implements Model, SoftDeletab
     @Enumerated(EnumType.STRING)
     @Column(name = "RELATION_STATUS", nullable = false, length = 20)
     private RelationStatus relationStatus; // ACTIVO, INACTIVO, SUSPENDIDO, etc.
-
-//    @ManyToMany(fetch = FetchType.EAGER)
-//    @JoinTable(name = "PERSON_TENANT_ROLE",
-//            joinColumns = @JoinColumn(name = "PERSON_TENANT_ID"),
-//            inverseJoinColumns = @JoinColumn(name = "ROLE_ID"))
-//    private Set<Role> roles = new HashSet<>();
 }

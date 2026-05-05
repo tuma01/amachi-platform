@@ -33,10 +33,7 @@ public class UserInvitationSpecification implements Specification<UserInvitation
             predicates.add(cb.like(root.join("user").get("email"), "%" + searchDto.getEmail() + "%"));
         }
 
-        // El aislamiento por tenant (tenantCode) lo maneja el BaseService o lo añadimos aquí para redundancia segura
-        if (searchDto.getTenantCode() != null && !searchDto.getTenantCode().isBlank()) {
-            predicates.add(cb.equal(root.join("tenant").get("code"), searchDto.getTenantCode()));
-        }
+        // Aislamiento por tenant gestionado por el filtro Hibernate (@TenantAware en InvitationServiceImpl)
 
         return cb.and(predicates.toArray(new Predicate[0]));
     }

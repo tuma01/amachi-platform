@@ -67,6 +67,7 @@ public class JwtServiceImpl implements JwtService {
                 .accessTokenExpiresAt(accessTokenExpiresAt)
                 .refreshToken(refreshToken)
                 .refreshTokenExpiresAt(refreshTokenExpiresAt)
+                .expiresIn(accessTokenExpiration / 1000L)
                 .build();
     }
 
@@ -90,17 +91,12 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public boolean validateToken(String token) {
+    public void validateToken(String token) {
         try {
-//            Jwts.parser()
-//                    .verifyWith(signingKey)
-//                    .build()
-//                    .parseSignedClaims(token);
             Jwts.parserBuilder()
                     .setSigningKey(signingKey)
                     .build()
                     .parseClaimsJws(token);
-            return true;
         } catch (ExpiredJwtException ex) {
             log.warn("JWT token expired: {}", ex.getMessage());
             throw new TokenException("Token expired", "TOKEN_EXPIRED");

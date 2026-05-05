@@ -14,7 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
-import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class HealthcareProviderMapperTest {
@@ -26,7 +25,6 @@ class HealthcareProviderMapperTest {
     @BeforeEach
     void setUp() {
         mapper = Mappers.getMapper(HealthcareProviderMapper.class);
-        ReflectionTestUtils.setField(mapper, "addressMapper", addressMapper);
     }
 
     @Test

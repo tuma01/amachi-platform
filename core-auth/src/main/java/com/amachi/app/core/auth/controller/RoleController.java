@@ -35,16 +35,13 @@ public class RoleController extends BaseController implements RoleApi {
 
     @Override
     public ResponseEntity<RoleDto> createRole(@NonNull RoleDto dto) {
-        Role entity = mapper.toEntity(dto);
-        Role savedEntity = service.create(entity);
+        Role savedEntity = service.create(dto);
         return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
     }
 
     @Override
     public ResponseEntity<RoleDto> updateRole(@NonNull Long id, @NonNull RoleDto dto) {
-        Role existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        Role updatedEntity = service.update(id, existingEntity);
+        Role updatedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 

@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface VaccineMapper extends EntityDtoMapper<Vaccine, VaccineDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     Vaccine toEntity(VaccineDto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(VaccineDto dto, @MappingTarget Vaccine entity);
 

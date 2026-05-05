@@ -11,7 +11,7 @@ public interface RefreshTokenService {
 
     void verifyExpiration(RefreshToken token);
 
-    void deleteByUserIdAndTenantId(Long userId, String tenantCode);
+    void deleteByUserIdAndTenantCode(Long userId, String tenantCode);
 
     void deleteExpiredTokens();
 

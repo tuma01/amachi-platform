@@ -11,10 +11,10 @@ import org.mapstruct.*;
 public interface MedicationMapper extends EntityDtoMapper<Medication, MedicationDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     Medication toEntity(MedicationDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(MedicationDto dto, @MappingTarget Medication entity);
 

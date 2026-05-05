@@ -28,21 +28,13 @@ public class KinshipSpecification extends BaseSpecification<Kinship> {
             predicates.add(cb.equal(root.get("id"), criteria.getId()));
         }
 
-        // Filtrar por código (LIKE)
-        if (criteria.getCode() != null && !criteria.getCode().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("code")), 
-                    "%" + criteria.getCode().toLowerCase() + "%"));
-        }
-
-        // Filtrar por nombre del parentesco (LIKE)
-        if (criteria.getName() != null && !criteria.getName().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("name")), 
-                    "%" + criteria.getName().toLowerCase() + "%"));
-        }
-
-        // Filtrar por estado activo/inactivo
-        if (criteria.getActive() != null) {
-            predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+        // Filtrar por búsqueda global (Query) en código o nombre
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            String q = "%" + criteria.getQuery().toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("code")), q),
+                cb.like(cb.lower(root.get("name")), q)
+            ));
         }
 
         return cb.and(predicates.toArray(new Predicate[0]));

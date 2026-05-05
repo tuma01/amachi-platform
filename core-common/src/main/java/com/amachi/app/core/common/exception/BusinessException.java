@@ -1,11 +1,12 @@
 package com.amachi.app.core.common.exception;
 
+import com.amachi.app.core.common.error.ErrorCode;
+
 /**
- * Excepción base para reglas de negocio (Capa de Dominio - Sin dependencias Web).
- * El manejo de códigos HTTP debe realizarse exclusivamente en la capa de infraestructura (boot).
+ * Excepción base para reglas de negocio.
  */
-public class BusinessException extends RuntimeException {
-    public BusinessException(String message) {
-        super(message);
+public class BusinessException extends CoreException {
+    public BusinessException(String messageKey, Object... args) {
+        super(ErrorCode.BUS_RULE_VIOLATION, messageKey, args);
     }
 }

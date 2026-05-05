@@ -22,12 +22,6 @@ public class UserTenantRoleDto {
     @Schema(description = "User associated with the role assignment")
     private UserDto user;
 
-    @Schema(description = "ID of the associated Tenant")
-    private Long tenantId;
-
-    @Schema(description = "Code of the associated Tenant", example = "VITALIA-001")
-    private String tenantCode;
-
     @Schema(description = "Role assigned to the user in the tenant context")
     private RoleDto role;
 

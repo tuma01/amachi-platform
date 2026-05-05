@@ -111,7 +111,7 @@ public interface InvitationApi {
 
     @Operation(
         summary = "Get paginated invitations [TENANT_ADMIN]",
-        description = "Retrieves a paginated list of all invitations emitted by the specified tenant. " +
+        description = "Retrieves a paginated list of invitations for the current tenant (resolved from subdomain). " +
                       "Useful for rendering the invitations administrative dashboard.",
         responses = {
             @ApiResponse(responseCode = "200", description = "Paginated list of invitations successfully retrieved."),
@@ -121,8 +121,6 @@ public interface InvitationApi {
     )
     @GetMapping
     ResponseEntity<PageResponseDto<InvitationResponse>> getInvitations(
-            @Parameter(description = "The target tenant code.", required = true)
-            @RequestParam("tenantCode") String tenantCode,
             @Parameter(description = "Optional filter by invitation status.")
             @RequestParam(value = "status", required = false) String status,
             @Parameter(description = "Optional filter by role name.")

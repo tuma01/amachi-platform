@@ -38,6 +38,7 @@ public class MedicalProcedureDto implements Serializable {
     private String name;
 
     @JsonProperty("type")
+    @NotBlank(message = "Type {err.mandatory}")
     @Schema(description = "Type of procedure", example = "LABORATORY")
     private String type;
 

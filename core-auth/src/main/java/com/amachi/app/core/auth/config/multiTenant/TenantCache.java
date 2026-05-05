@@ -23,6 +23,11 @@ public class TenantCache {
         return tenantMap.computeIfAbsent(tenantCode, this::loadTenantFromDb);
     }
 
+    public Long getTenantId(String tenantCode) {
+        Tenant tenant = getTenant(tenantCode);
+        return tenant != null ? tenant.getId() : null;
+    }
+
     /**
      * Carga un Tenant desde la base de datos.
      *

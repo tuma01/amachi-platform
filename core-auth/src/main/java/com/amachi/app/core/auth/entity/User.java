@@ -1,11 +1,12 @@
 package com.amachi.app.core.auth.entity;
 
-import com.amachi.app.core.common.entity.BaseTenantEntity;
+import com.amachi.app.core.common.entity.Auditable;
+import jakarta.validation.constraints.NotBlank;
 import com.amachi.app.core.domain.entity.Person;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -17,37 +18,48 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Entidad principal que representa la cuenta del usuario en el sistema (Elite Tier).
- * (Manual Implementation to resolve Lombok resolution bottlenecks during refactoring)
+ * Global Identity Entity (Registry Pattern).
  */
+@Getter
+@SuperBuilder
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @Entity
 @Table(name = "AUT_USER")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
-@SuperBuilder
-public class User extends BaseTenantEntity implements UserDetails, Principal {
+public class User extends Auditable<String> implements UserDetails, Principal {
 
-    @NotBlank(message = "Email {err.required}")
-    @Email(message = "El email debe tener un formato válido")
-    @Column(name = "EMAIL", nullable = false, length = 100, unique = true)
+    @Column(name = "IS_DELETED", nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
+    /**
+     * SCHEMA COMPATIBILITY FIELDS
+     * Logically global, physically scoped in legacy DB.
+     */
+    @Column(name = "TENANT_ID", nullable = false)
+    @Builder.Default
+    private Long tenantId = 0L;
+
+    @Column(name = "TENANT_CODE", nullable = false, length = 50)
+    @Builder.Default
+    private String tenantCode = "GLOBAL";
+
+    @NotBlank(message = "Email is mandatory")
     private String email;
+    private boolean enabled;
 
-    @NotBlank(message = "Password {err.required}")
     @Column(name = "PASSWORD", nullable = false)
     private String password;
 
     @Column(name = "ACCOUNT_LOCKED", nullable = false)
     private boolean accountLocked;
 
-    @Builder.Default
-    @Column(name = "ENABLED", nullable = false)
-    private boolean enabled = true;
-
     @Column(name = "LAST_LOGIN")
     private LocalDateTime lastLogin;
 
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "PERSON_ID")
+    @JoinColumn(name = "FK_ID_PERSON", foreignKey = @ForeignKey(name = "FK_AUT_USER_PERSON"))
     private Person person;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -60,9 +72,6 @@ public class User extends BaseTenantEntity implements UserDetails, Principal {
         if (this.email != null) {
             this.email = this.email.toLowerCase().trim();
         }
-        if (getTenantId() == null) {
-            setTenantId("SYSTEM");
-        }
     }
 
     @JsonIgnore
@@ -72,21 +81,27 @@ public class User extends BaseTenantEntity implements UserDetails, Principal {
     }
 
     @Override
-    public String getUsername() { return this.email; }
+    public String getUsername() {
+        return this.email;
+    }
 
     @Override
-    public boolean isAccountNonExpired() { return true; }
+    public boolean isAccountNonExpired() {
+        return true;
+    }
 
     @Override
-    public boolean isAccountNonLocked() { return !this.accountLocked; }
+    public boolean isAccountNonLocked() {
+        return true;
+    }
 
     @Override
-    public boolean isCredentialsNonExpired() { return true; }
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
 
     @Override
-    public String getName() { return this.email; }
-
-    public Long getPersonId() {
-        return person != null ? person.getId() : null;
+    public String getName() {
+        return this.email;
     }
 }

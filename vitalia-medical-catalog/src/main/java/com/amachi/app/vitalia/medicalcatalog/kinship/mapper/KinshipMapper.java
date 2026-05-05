@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface KinshipMapper extends EntityDtoMapper<Kinship, KinshipDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     Kinship toEntity(KinshipDto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(KinshipDto dto, @MappingTarget Kinship entity);
 

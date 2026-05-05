@@ -14,7 +14,4 @@ public class PasswordResetRequest {
     @Email(message = "Email format is invalid")
     @NotEmpty(message = "Email is required")
     private String email;
-
-    @NotEmpty(message = "Tenant code is required")
-    private String tenantCode;
 }

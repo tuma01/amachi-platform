@@ -1,52 +1,67 @@
 package com.amachi.app.vitalia.medicalcatalog.medication.service.impl;
- 
-import com.amachi.app.core.common.event.DomainEventPublisher;
-import com.amachi.app.core.common.exception.BusinessException;
 
+import com.amachi.app.core.common.event.DomainEventPublisher;
 import com.amachi.app.core.common.service.BaseService;
+import com.amachi.app.vitalia.medicalcatalog.kinship.entity.Kinship;
+import com.amachi.app.vitalia.medicalcatalog.kinship.event.KinshipChangedEvent;
+import com.amachi.app.vitalia.medicalcatalog.medication.dto.MedicationDto;
 import com.amachi.app.vitalia.medicalcatalog.medication.dto.search.MedicationSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.medication.entity.Medication;
-import com.amachi.app.vitalia.medicalcatalog.medication.event.MedicationCreatedEvent;
+import com.amachi.app.vitalia.medicalcatalog.medication.event.MedicationChangedEvent;
+import com.amachi.app.vitalia.medicalcatalog.medication.mapper.MedicationMapper;
 import com.amachi.app.vitalia.medicalcatalog.medication.repository.MedicationRepository;
+import com.amachi.app.vitalia.medicalcatalog.medication.service.MedicationService;
 import com.amachi.app.vitalia.medicalcatalog.medication.specification.MedicationSpecification;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
- 
+
 /**
- * Implementation of Medication Service following SaaS Elite Tier standards.
+ * Medication Service Implementation.
+ * Patrón validado: DTO-First con hooks de mapeo.
  */
 @Service
 @RequiredArgsConstructor
 @Getter
-public class MedicationServiceImpl extends BaseService<Medication, MedicationSearchDto> {
- 
+@Transactional(readOnly = true)
+public class MedicationServiceImpl extends BaseService<Medication, MedicationDto, MedicationSearchDto> implements MedicationService {
+
     private final MedicationRepository repository;
+    private final MedicationMapper mapper;
     private final DomainEventPublisher eventPublisher;
- 
+
     @Override
     protected Specification<Medication> buildSpecification(MedicationSearchDto searchDto) {
         return new MedicationSpecification(searchDto);
     }
- 
+
     @Override
-    @Transactional
-    public Medication create(Medication entity) {
-        if (repository.existsByCode(entity.getCode().trim().toUpperCase())) {
-            throw new BusinessException("Medication code '" + entity.getCode() + "' already exists in Global Catalog");
-        }
-        return super.create(entity);
+    protected Medication mapToEntity(MedicationDto dto) {
+        return mapper.toEntity(dto);
     }
- 
+
+    @Override
+    protected void mergeEntities(MedicationDto dto, Medication existing) {
+        mapper.updateEntityFromDto(dto, existing);
+    }
+
     @Override
     protected void publishCreatedEvent(Medication entity) {
-        eventPublisher.publish(new MedicationCreatedEvent(entity.getId(), entity.getCode(), entity.getGenericName()));
+        publishChanged(entity);
     }
- 
+
     @Override
     protected void publishUpdatedEvent(Medication entity) {
-        // En este catálogo solo se publica evento al crear
+        publishChanged(entity);
+    }
+
+    private void publishChanged(Medication entity) {
+        if (eventPublisher != null) {
+            eventPublisher.publish(
+                    new MedicationChangedEvent(entity.getId(), entity.getCode(), entity.getGenericName())
+            );
+        }
     }
 }

@@ -36,16 +36,13 @@ public class ThemeController extends BaseController implements ThemeApi {
 
     @Override
     public ResponseEntity<ThemeDto> createTheme(ThemeDto dto) {
-        Theme entity = mapper.toEntity(dto);
-        Theme savedEntity = themeService.create(entity);
+        Theme savedEntity = themeService.create(dto);
         return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
     }
 
     @Override
     public ResponseEntity<ThemeDto> updateTheme(Long id, ThemeDto dto) {
-        Theme existingEntity = themeService.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        Theme updatedEntity = themeService.update(id, existingEntity);
+        Theme updatedEntity = themeService.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 
@@ -90,7 +87,7 @@ public class ThemeController extends BaseController implements ThemeApi {
     // Public: returns theme by tenantCode
     @GetMapping(value = "/tenant/{tenantCode}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ThemeDto> getThemeByTenant(@PathVariable String tenantCode) {
-        ThemeDto dto = themeService.getThemeForTenant(tenantCode);
+        ThemeDto dto = themeService.getThemeForTenant();
         return ResponseEntity.ok(dto);
     }
 
@@ -99,7 +96,7 @@ public class ThemeController extends BaseController implements ThemeApi {
     @PutMapping(value = "/tenant/{tenantCode}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ThemeDto> upgradeTheme(@PathVariable String tenantCode,
             @Valid @RequestBody ThemeDto dto) {
-        return ResponseEntity.ok(themeService.upgradeTheme(tenantCode, dto));
+        return ResponseEntity.ok(themeService.upgradeTheme(dto));
     }
 
     // Upload logo (multipart): only ADMIN or SUPER_ADMIN
@@ -107,7 +104,7 @@ public class ThemeController extends BaseController implements ThemeApi {
     @PostMapping(value = "/tenant/{tenantCode}/logo", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ThemeDto> uploadLogo(@PathVariable String tenantCode,
             @RequestParam("file") MultipartFile file) {
-        ThemeDto dto = themeService.uploadLogo(tenantCode, file);
+        ThemeDto dto = themeService.uploadLogo(file);
         return ResponseEntity.ok(dto);
     }
 }

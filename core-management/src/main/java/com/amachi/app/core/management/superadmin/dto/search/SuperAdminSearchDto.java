@@ -2,24 +2,19 @@ package com.amachi.app.core.management.superadmin.dto.search;
 
 import com.amachi.app.core.common.dto.BaseSearchDto;
 import io.swagger.v3.oas.annotations.Hidden;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+/**
+ * Filtros de búsqueda para super administradores (SaaS Elite Tier).
+ * Jerarquía corregida: extends BaseSearchDto.
+ */
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Hidden
-public class SuperAdminSearchDto implements BaseSearchDto {
-
-    private Long id;
+public class SuperAdminSearchDto extends BaseSearchDto {
     private Boolean globalAccess;
     private Long userId;
-
-    @Override
-    public Long getId() {
-        return id;
-    }
 }

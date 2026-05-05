@@ -4,7 +4,7 @@ import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.entity.User;
 import com.amachi.app.core.auth.entity.UserTenantRole;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
-import com.amachi.app.core.common.repository.CommonRepository;
+import com.amachi.app.core.common.repository.TenantCommonRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,8 +14,8 @@ import java.util.Optional;
 
 @Repository
 public interface UserTenantRoleRepository
-                extends CommonRepository<UserTenantRole, Long> {
-
+                extends TenantCommonRepository<UserTenantRole, Long>, UserTenantRoleRepositoryCustom {
+//assignRolesToUserAndTenant
         @Query("SELECT utr.role.name FROM UserTenantRole utr WHERE utr.user = :user AND utr.tenant.code = :tenantCode AND utr.active = true AND utr.revokedAt IS NULL")
         List<String> findActiveRolesByUserAndTenantCode(@Param("user") User user,
                         @Param("tenantCode") String tenantCode);
@@ -73,4 +73,6 @@ public interface UserTenantRoleRepository
                         """)
         List<String> findActivePermissionsNamesByUserAndTenant(@Param("user") User user,
                         @Param("tenant") Tenant tenant);
+
+        boolean existsByUserAndTenantIdAndRoleAndDeletedFalse(User user, Long tenantId, Role role);
 }

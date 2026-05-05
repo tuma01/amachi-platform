@@ -1,15 +1,19 @@
 package com.amachi.app.core.auth.service.impl;
 
+import com.amachi.app.core.auth.dto.UserTenantRoleDto;
+import com.amachi.app.core.auth.mapper.UserTenantRoleMapper;
 import com.amachi.app.core.auth.dto.search.UserTenantRoleSearchDto;
 import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.entity.User;
 import com.amachi.app.core.auth.entity.UserTenantRole;
 import com.amachi.app.core.auth.repository.RoleRepository;
 import com.amachi.app.core.auth.repository.UserTenantRoleRepository;
+import com.amachi.app.core.common.context.TenantContext;
 import com.amachi.app.core.common.test.util.AbstractTestSupport;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.mockito.Spy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
@@ -40,9 +45,13 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
     private UserTenantRoleRepository userTenantRoleRepository;
 
     @Mock
+    private UserTenantRoleMapper mapper;
+
+    @Mock
     private EntityManager em;
 
     @InjectMocks
+    @Spy
     private UserTenantRoleServiceImpl service;
 
     private static final String DATA_PATH = "data/usertenantrole/";
@@ -51,18 +60,25 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
 
     @BeforeEach
     void setUp() {
+        TenantContext.setTenantId(1L); // ✅ obligatorio
         entity = loadJson(DATA_PATH + "utr-entity.json", UserTenantRole.class);
         searchDto = loadJson(DATA_PATH + "utr-search-dto.json", UserTenantRoleSearchDto.class);
     }
 
+    @AfterEach
+    void cleanup() {
+        TenantContext.clear();
+    }
+
     @Test
     void getAll_ShouldReturnList() {
-        when(userTenantRoleRepository.findAll()).thenReturn(List.of(entity));
+        when(userTenantRoleRepository.findAll(isA(Specification.class)))
+                .thenReturn(List.of(entity));
 
         List<UserTenantRole> result = service.getAll();
 
         assertThat(result).hasSize(1);
-        verify(userTenantRoleRepository).findAll();
+        verify(userTenantRoleRepository).findAll(any(Specification.class));
     }
 
     @Test
@@ -78,7 +94,11 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
 
     @Test
     void getById_WhenExists_ShouldReturnEntity() {
-        when(userTenantRoleRepository.findById(1L)).thenReturn(Optional.of(entity));
+        entity.setDeleted(false);
+        entity.setTenantId(1L);
+
+        when(userTenantRoleRepository.findByIdAndTenantId(1L, 1L))
+                .thenReturn(Optional.of(entity));
 
         UserTenantRole result = service.getById(1L);
 
@@ -88,7 +108,11 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
 
     @Test
     void getById_WhenNotExists_ShouldThrowException() {
-        when(userTenantRoleRepository.findById(1L)).thenReturn(Optional.empty());
+
+        when(userTenantRoleRepository.findByIdAndTenantId(1L, 1L))
+                .thenReturn(Optional.empty());
+
+        TenantContext.setTenantId(1L); // 🔥 obligatorio
 
         assertThatThrownBy(() -> service.getById(1L))
                 .isInstanceOf(ResourceNotFoundException.class);
@@ -96,32 +120,41 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
 
     @Test
     void create_ShouldSaveAndReturn() {
+        UserTenantRoleDto dto = mock(UserTenantRoleDto.class);
         when(userTenantRoleRepository.save(any(UserTenantRole.class))).thenReturn(entity);
+        doReturn(entity).when(service).mapToEntity(dto);
 
-        UserTenantRole result = service.create(entity);
+        UserTenantRole result = service.create(dto);
 
         assertThat(result).isNotNull();
-        verify(userTenantRoleRepository).save(entity);
+        verify(userTenantRoleRepository).save(any(UserTenantRole.class));
     }
 
     @Test
     void update_WhenExists_ShouldUpdateAndReturn() {
-        when(userTenantRoleRepository.findById(1L)).thenReturn(Optional.of(entity));
-        when(userTenantRoleRepository.save(any(UserTenantRole.class))).thenReturn(entity);
+        UserTenantRoleDto dto = mock(UserTenantRoleDto.class);
+        TenantContext.setTenantId(1L); // 🔥 obligatorio
 
-        UserTenantRole result = service.update(1L, entity);
+        when(userTenantRoleRepository.findByIdAndTenantId(1L, 1L))
+                .thenReturn(Optional.of(entity));
+        when(userTenantRoleRepository.save(any(UserTenantRole.class)))
+                .thenReturn(entity);
 
+        doNothing().when(service).mergeEntities(eq(dto), any(UserTenantRole.class));
+        UserTenantRole result = service.update(1L, dto);
         assertThat(result).isNotNull();
-        verify(userTenantRoleRepository).save(entity);
+        verify(userTenantRoleRepository).save(any(UserTenantRole.class));
     }
 
     @Test
     void delete_WhenExists_ShouldDelete() {
-        when(userTenantRoleRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(userTenantRoleRepository.findByIdAndTenantId(1L, 1L)).thenReturn(Optional.of(entity));
 
         service.delete(1L);
 
-        verify(userTenantRoleRepository).delete(entity);
+        verify(userTenantRoleRepository).save(entity);
+        assertThat(entity.getDeleted()).isTrue();
+//        verify(userTenantRoleRepository).delete(entity);
     }
 
     @Test
@@ -129,7 +162,6 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
         List<String> roles = List.of("ROLE_ADMIN");
         when(roleRepository.findByNameIn(roles)).thenReturn(List.of(entity.getRole()));
         when(em.getReference(eq(User.class), anyLong())).thenReturn(entity.getUser());
-        when(em.getReference(eq(Tenant.class), anyLong())).thenReturn(entity.getTenant());
 
         service.assignRolesToUserAndTenant(1L, 1L, roles);
 
@@ -138,14 +170,19 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
 
     @Test
     void assignRolesToUserAndTenant_ByEntities_ShouldReturnSavedSet() {
+
         Set<Role> roles = Set.of(entity.getRole());
-        when(em.getReference(eq(User.class), anyLong())).thenReturn(entity.getUser());
-        when(em.getReference(eq(Tenant.class), anyLong())).thenReturn(entity.getTenant());
-        when(userTenantRoleRepository.existsByUserAndTenantAndRole(any(), any(), any())).thenReturn(false);
-        when(userTenantRoleRepository.saveAll(anyCollection())).thenReturn(List.of(entity));
 
-        Set<UserTenantRole> result = service.assignRolesToUserAndTenant(entity.getUser(), entity.getTenant(), roles);
+        when(em.getReference(eq(User.class), anyLong()))
+                .thenReturn(entity.getUser());
+        when(userTenantRoleRepository
+                .existsByUserAndTenantIdAndRoleAndDeletedFalse(any(), anyLong(), any()))
+                .thenReturn(false);
+        when(userTenantRoleRepository.saveAll(anyCollection()))
+                .thenReturn(List.of(entity));
 
+        Set<UserTenantRole> result =
+                service.assignRolesToUserAndTenant(entity.getUser(), entity.getTenantId(), roles);
         assertThat(result).hasSize(1);
         verify(userTenantRoleRepository).saveAll(anyCollection());
     }
@@ -162,7 +199,6 @@ class UserTenantRoleServiceImplTest extends AbstractTestSupport {
     @Test
     void revokeRole_ShouldDeactivateAndSetRevokedAt() {
         when(em.getReference(eq(User.class), anyLong())).thenReturn(entity.getUser());
-        when(em.getReference(eq(Tenant.class), anyLong())).thenReturn(entity.getTenant());
         when(userTenantRoleRepository.findAll(any(Specification.class))).thenReturn(List.of(entity));
 
         service.revokeRole(1L, 1L, "ROLE_ADMIN");

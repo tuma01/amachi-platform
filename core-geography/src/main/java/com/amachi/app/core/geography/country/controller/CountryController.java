@@ -35,16 +35,13 @@ public class CountryController extends BaseController implements CountryApi {
 
     @Override
     public ResponseEntity<CountryDto> createCountry(@Valid @RequestBody @NonNull CountryDto dto) {
-        Country entity = mapper.toEntity(dto);
-        Country savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Country savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     public ResponseEntity<CountryDto> updateCountry(@NonNull Long id, @Valid @RequestBody @NonNull CountryDto dto) {
-        Country existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        Country updatedEntity = service.update(id, existingEntity);
+        Country updatedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 
@@ -66,12 +63,9 @@ public class CountryController extends BaseController implements CountryApi {
     public ResponseEntity<PageResponseDto<CountryDto>> getPaginatedCountries(
             @NonNull CountrySearchDto countrySearchDto, Integer pageIndex, Integer pageSize) {
         Page<Country> page = service.getAll(countrySearchDto, pageIndex, pageSize);
-        List<CountryDto> dtos = page.getContent()
-                .stream()
-                .map(mapper::toDto).toList();
 
-        PageResponseDto<CountryDto> response = PageResponseDto.<CountryDto>builder()
-                .content(dtos)
+        return ResponseEntity.ok(PageResponseDto.<CountryDto>builder()
+                .content(mapper.toDtoList(page.getContent()))
                 .totalElements(page.getTotalElements())
                 .pageIndex(page.getNumber())
                 .pageSize(page.getSize())
@@ -80,8 +74,6 @@ public class CountryController extends BaseController implements CountryApi {
                 .last(page.isLast())
                 .empty(page.isEmpty())
                 .numberOfElements(page.getNumberOfElements())
-                .build();
-
-        return ResponseEntity.ok(response);
+                .build());
     }
 }

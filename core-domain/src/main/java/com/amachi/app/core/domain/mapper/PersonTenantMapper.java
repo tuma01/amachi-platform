@@ -1,10 +1,13 @@
 package com.amachi.app.core.domain.mapper;
 
+import com.amachi.app.core.common.mapper.EntityDtoMapper;
+import com.amachi.app.core.domain.dto.PersonTenantDto;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.common.enums.RelationStatus;
 import com.amachi.app.core.common.enums.RoleContext;
 import com.amachi.app.core.common.mapper.BaseMapperConfig;
 import com.amachi.app.core.domain.entity.PersonTenant;
+import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Named;
 
@@ -13,8 +16,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Mapper(config = BaseMapperConfig.class)
-public interface PersonTenantMapper {
+@Mapper(config = BaseMapperConfig.class, builder = @Builder(disableBuilder = true))
+public interface PersonTenantMapper  extends EntityDtoMapper<PersonTenant, PersonTenantDto> {
 
     @Named("personTenantSetFromIdsForSuperAdmin")
     default Set<PersonTenant> personTenantSetFromIdsForSuperAdmin(Set<Long> tenantIds) {

@@ -17,7 +17,7 @@ public class RoleCreatedEvent extends DomainEvent {
 
     public RoleCreatedEvent(Long roleId, String name) {
         // Global static context: roles are platform-level, not tenant-scoped
-        super(LocalDateTime.now(), "SYSTEM");
+        super(LocalDateTime.now(), 0L);
         this.roleId = roleId;
         this.name = name;
     }

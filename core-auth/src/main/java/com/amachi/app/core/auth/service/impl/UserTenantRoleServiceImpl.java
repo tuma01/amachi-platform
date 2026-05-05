@@ -1,13 +1,16 @@
 package com.amachi.app.core.auth.service.impl;
 
+import com.amachi.app.core.auth.dto.UserTenantRoleDto;
 import com.amachi.app.core.auth.dto.search.UserTenantRoleSearchDto;
 import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.entity.User;
 import com.amachi.app.core.auth.entity.UserTenantRole;
+import com.amachi.app.core.auth.mapper.UserTenantRoleMapper;
 import com.amachi.app.core.auth.repository.RoleRepository;
 import com.amachi.app.core.auth.repository.UserTenantRoleRepository;
 import com.amachi.app.core.auth.service.UserTenantRoleService;
 import com.amachi.app.core.auth.specification.UserTenantRoleSpecification;
+import com.amachi.app.core.common.annotation.TenantAware;
 import com.amachi.app.core.common.event.DomainEventPublisher;
 import com.amachi.app.core.common.repository.CommonRepository;
 import com.amachi.app.core.common.service.BaseService;
@@ -28,15 +31,17 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@TenantAware
 @RequiredArgsConstructor
 @Slf4j
-public class UserTenantRoleServiceImpl extends BaseService<UserTenantRole, UserTenantRoleSearchDto> 
+public class UserTenantRoleServiceImpl extends BaseService<UserTenantRole, UserTenantRoleDto, UserTenantRoleSearchDto> 
         implements UserTenantRoleService {
 
     private final RoleRepository roleRepository;
     private final UserTenantRoleRepository userTenantRoleRepository;
     private final TenantRepository tenantRepository;
     private final DomainEventPublisher eventPublisher;
+    private final UserTenantRoleMapper mapper;
 
     @PersistenceContext
     private final EntityManager em;
@@ -54,6 +59,16 @@ public class UserTenantRoleServiceImpl extends BaseService<UserTenantRole, UserT
     @Override
     protected DomainEventPublisher getEventPublisher() {
         return eventPublisher;
+    }
+
+    @Override
+    protected UserTenantRole mapToEntity(UserTenantRoleDto dto) {
+        return mapper.toEntity(dto);
+    }
+
+    @Override
+    protected void mergeEntities(UserTenantRoleDto dto, UserTenantRole existing) {
+        mapper.updateEntityFromDto(dto, existing);
     }
 
     @Override
@@ -79,7 +94,7 @@ public class UserTenantRoleServiceImpl extends BaseService<UserTenantRole, UserT
         List<UserTenantRole> entities = roles.stream()
                 .map(role -> UserTenantRole.builder()
                         .user(userRef)
-                        .tenant(tenantRef)
+                        .tenantId(tenantId)
                         .role(role)
                         .active(true)
                         .assignedAt(LocalDateTime.now())
@@ -89,18 +104,21 @@ public class UserTenantRoleServiceImpl extends BaseService<UserTenantRole, UserT
     }
 
     @Transactional
-    public Set<UserTenantRole> assignRolesToUserAndTenant(User user, Tenant tenant, Set<Role> roles) {
+    public Set<UserTenantRole> assignRolesToUserAndTenant(User user, Long tenantId, Set<Role> roles) {
+
         if (roles == null || roles.isEmpty()) return Set.of();
 
         User userRef = em.getReference(User.class, user.getId());
-        Tenant tenantRef = em.getReference(Tenant.class, tenant.getId());
 
         Set<UserTenantRole> toPersist = new HashSet<>();
+
         for (Role role : roles) {
-            if (!userTenantRoleRepository.existsByUserAndTenantAndRole(userRef, tenantRef, role)) {
+            if (!userTenantRoleRepository
+                    .existsByUserAndTenantIdAndRoleAndDeletedFalse(userRef, tenantId, role)) {
+
                 toPersist.add(UserTenantRole.builder()
                         .user(userRef)
-                        .tenant(tenantRef)
+                        .tenantId(tenantId)
                         .role(role)
                         .active(true)
                         .assignedAt(LocalDateTime.now())
@@ -111,6 +129,7 @@ public class UserTenantRoleServiceImpl extends BaseService<UserTenantRole, UserT
         if (!toPersist.isEmpty()) {
             return new HashSet<>(userTenantRoleRepository.saveAll(toPersist));
         }
+
         return Set.of();
     }
 

@@ -1,6 +1,3 @@
--- *******************************************************
--- Script de Limpieza de Identidad Pura (SaaS Elite)
--- *******************************************************
--- Elimina columnas de discriminador de herencia en DMN_PERSON.
-
-ALTER TABLE DMN_PERSON DROP COLUMN PERSON_TYPE;
+-- Script neutralizado conforme a la regla SaaS Elite: Prohibido ALTERS.
+-- La columna PERSON_TYPE fue eliminada directamente en el script de creación V3_4.
+SELECT 1;

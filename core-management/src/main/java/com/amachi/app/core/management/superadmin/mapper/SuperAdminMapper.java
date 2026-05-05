@@ -18,7 +18,6 @@ public interface SuperAdminMapper extends EntityDtoMapper<SuperAdmin, SuperAdmin
 
     @Override
     @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-    @Mapping(target = "personTenants", source = "personTenantsIds", qualifiedByName = "personTenantSetFromIdsForSuperAdmin")
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedBy", ignore = true)
@@ -26,7 +25,6 @@ public interface SuperAdminMapper extends EntityDtoMapper<SuperAdmin, SuperAdmin
     SuperAdmin toEntity(SuperAdminDto dto);
 
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, unmappedSourcePolicy = ReportingPolicy.IGNORE)
-    @Mapping(target = "personTenants", source = "personTenantsIds", qualifiedByName = "personTenantSetFromIdsForSuperAdmin")
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
@@ -36,6 +34,5 @@ public interface SuperAdminMapper extends EntityDtoMapper<SuperAdmin, SuperAdmin
 
     @Override
     @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-    @Mapping(target = "personTenantsIds", source = "personTenants", qualifiedByName = "personTenantSetToIds")
     SuperAdminDto toDto(SuperAdmin entity);
 }

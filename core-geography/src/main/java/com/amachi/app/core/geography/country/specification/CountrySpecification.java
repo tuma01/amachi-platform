@@ -21,6 +21,10 @@ public class CountrySpecification implements Specification<Country> {
 
     @Override
     public Predicate toPredicate(@NonNull Root<Country> root, @Nullable CriteriaQuery<?> query, @NonNull CriteriaBuilder cb) {
+
+        if (criteria == null) {
+            return cb.conjunction();
+        }
         List<Predicate> predicates = new ArrayList<>();
 
         if (criteria.getId() != null) {
@@ -31,8 +35,8 @@ public class CountrySpecification implements Specification<Country> {
             predicates.add(cb.like(cb.lower(root.get("name")), "%" + criteria.getName().toLowerCase() + "%"));
         }
 
-        if (criteria.getIso() != null) {
-            predicates.add(cb.equal(root.get("iso"), criteria.getIso()));
+        if (criteria.getIso() != null && !criteria.getIso().isBlank()) {
+            predicates.add(cb.equal(root.get("iso"), criteria.getIso().trim().toUpperCase()));
         }
 
         return cb.and(predicates.toArray(new Predicate[0]));

@@ -28,21 +28,13 @@ public class BloodTypeSpecification extends BaseSpecification<BloodType> {
             predicates.add(cb.equal(root.get("id"), criteria.getId()));
         }
 
-        // Filtro por código del tipo de sangre (LIKE)
-        if (criteria.getCode() != null && !criteria.getCode().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("code")), 
-                    "%" + criteria.getCode().toLowerCase() + "%"));
-        }
-
-        // Filtro por nombre del tipo de sangre (LIKE)
-        if (criteria.getName() != null && !criteria.getName().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("name")), 
-                    "%" + criteria.getName().toLowerCase() + "%"));
-        }
-
-        // Filtro por estado activo
-        if (criteria.getActive() != null) {
-            predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+        // Filtro por búsqueda global (Query) en código o nombre
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            String q = "%" + criteria.getQuery().toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("code")), q),
+                cb.like(cb.lower(root.get("name")), q)
+            ));
         }
 
         return cb.and(predicates.toArray(new Predicate[0]));

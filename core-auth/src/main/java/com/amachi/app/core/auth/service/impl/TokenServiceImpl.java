@@ -1,10 +1,13 @@
 package com.amachi.app.core.auth.service.impl;
 
+import com.amachi.app.core.auth.bridge.TenantBridge;
 import com.amachi.app.core.auth.entity.BlacklistedToken;
 import com.amachi.app.core.auth.entity.RefreshToken;
 import com.amachi.app.core.auth.entity.User;
+import com.amachi.app.core.common.annotation.TenantAware;
 import com.amachi.app.core.auth.exception.TokenException;
 import com.amachi.app.core.auth.repository.BlacklistedTokenRepository;
+import com.amachi.app.core.auth.repository.UserTenantRoleRepository;
 import com.amachi.app.core.auth.service.JwtService;
 import com.amachi.app.core.auth.service.RefreshTokenService;
 import com.amachi.app.core.auth.service.TokenService;
@@ -16,18 +19,22 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@TenantAware
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class TokenServiceImpl implements TokenService {
 
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
-    private final com.amachi.app.core.auth.repository.UserTenantRoleRepository userTenantRoleRepository;
+    private final UserTenantRoleRepository userTenantRoleRepository;
+    private final TenantBridge tenantBridge;
 
     @Override
     @Transactional
@@ -47,28 +54,35 @@ public class TokenServiceImpl implements TokenService {
     @Override
     @Transactional
     public TokenPairDto refreshTokenPair(String refreshToken) {
-        // Buscar refresh token en base de datos
-        Optional<RefreshToken> storedToken = refreshTokenService.findByToken(refreshToken);
-        if (storedToken.isEmpty()) {
-            throw new TokenException("Refresh token not found", "REFRESH_TOKEN_NOT_FOUND");
-        }
 
-        RefreshToken token = storedToken.get();
+        // 1. Buscar refresh token
+        RefreshToken token = refreshTokenService.findByToken(refreshToken)
+                .orElseThrow(() ->
+                        new TokenException("Refresh token not found", "REFRESH_TOKEN_NOT_FOUND"));
+
+        if (token.getTenantCode() == null) {
+            throw new TokenException("Refresh token missing tenant", "INVALID_REFRESH_TOKEN");
+        }
+        // 2. Validar expiración + estado
         refreshTokenService.verifyExpiration(token);
 
-        User user = token.getUser();
-        Tenant tenant = token.getTenant();
+        if (!token.isValid()) {
+            throw new TokenException("Refresh token invalid", "INVALID_REFRESH_TOKEN");
+        }
 
-        // Cargar Roles y Permisos (Effective Authorities)
+        // 3. Resolver entidades
+        User user = token.getUser();
+        Tenant tenant = tenantBridge.findByCode(token.getTenantCode());
+
+        // 4. Cargar roles y permisos
         List<String> roles = userTenantRoleRepository.findActiveRolesByUserAndTenant(user, tenant);
         List<String> permissions = userTenantRoleRepository.findActivePermissionsNamesByUserAndTenant(user, tenant);
 
-        // Combinar roles y permisos
-        List<String> combinedAuthorities = new java.util.ArrayList<>(roles);
+        List<String> combinedAuthorities = new ArrayList<>(roles);
         combinedAuthorities.addAll(permissions);
         combinedAuthorities = combinedAuthorities.stream().distinct().toList();
 
-        // Nuevo JWT user
+        // 5. Construir JWT user
         JwtUserDto jwtUser = JwtUserDto.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
@@ -76,17 +90,20 @@ public class TokenServiceImpl implements TokenService {
                 .roles(combinedAuthorities)
                 .build();
 
-        // ROTACIÓN DE TOKEN: Eliminar el refresh token anterior para usar uno nuevo
+        // 6. Generar nuevo token (PRIMERO)
+        TokenPairDto newTokenPair = generateAndStoreTokenPair(jwtUser, user, tenant);
+
+        // 7. Invalidar el anterior (DESPUÉS)
         refreshTokenService.delete(token);
 
-        // Generar y persistir nuevo par
-        return generateAndStoreTokenPair(jwtUser, user, tenant);
+        // 8. Retornar
+        return newTokenPair;
     }
 
     @Override
     @Transactional
     public void invalidateUserTokens(Long userId, String tenantCode) {
-        refreshTokenService.deleteByUserIdAndTenantId(userId, tenantCode);
+        refreshTokenService.deleteByUserIdAndTenantCode(userId, tenantCode);
     }
 
     @Override

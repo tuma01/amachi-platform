@@ -12,4 +12,5 @@ public interface PersonRepository extends CommonRepository<Person, Long> {
     Optional<Person> findByNationalId(String nationalId); // nationalId = CI / Passport
     Optional<Person> findByNationalHealthId(String nationalHealthId);
     Optional<Person> findByEmail(String email);
+
 }

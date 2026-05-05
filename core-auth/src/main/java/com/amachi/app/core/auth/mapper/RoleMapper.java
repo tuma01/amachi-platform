@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface RoleMapper extends EntityDtoMapper<Role, RoleDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnoreHybridAuditableFields
     Role toEntity(RoleDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnoreHybridAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(RoleDto dto, @MappingTarget Role entity);
 

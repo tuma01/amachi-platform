@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -67,10 +68,9 @@ public class HealthcareProviderDto implements Serializable {
     @Schema(description = "Public URL for institutional logo", example = "/assets/catalog/logos/sura.png")
     private String logoUrl;
 
-    @JsonProperty("hqAddress")
-    @Valid
-    @Schema(description = "Physical address of the main administrative headquarters")
-    private AddressDto hqAddress;
+    @NotNull(message = "Province {err.mandatory}")
+    @Schema(description = "ID of the headquarters address record", example = "10")
+    private Long hqAddressId;
 
     @JsonProperty("active")
     @Schema(description = "Status of the record", example = "true")

@@ -2,6 +2,7 @@ package com.amachi.app.core.auth.service.impl;
 
 import com.amachi.app.core.auth.entity.RefreshToken;
 import com.amachi.app.core.auth.entity.User;
+import com.amachi.app.core.common.annotation.TenantAware;
 import com.amachi.app.core.auth.exception.TokenException;
 import com.amachi.app.core.auth.repository.RefreshTokenRepository;
 import com.amachi.app.core.auth.service.RefreshTokenService;
@@ -18,7 +19,9 @@ import java.time.Instant;
 import java.util.Optional;
 
 @Service
+@TenantAware
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 @Slf4j
 public class RefreshTokenServiceImpl implements RefreshTokenService {
 
@@ -36,7 +39,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
         RefreshToken refreshToken = RefreshToken.builder()
                 .user(userRef)
-                .tenantId(tenantCode)
+                .tenantCode(tenantCode)
                 .token(token)
                 .expiryDate(Instant.now().plus(7, java.time.temporal.ChronoUnit.DAYS))
                 .revoked(false)
@@ -62,8 +65,8 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
 
     @Override
     @Transactional
-    public void deleteByUserIdAndTenantId(Long userId, String tenantCode) {
-        refreshTokenRepository.deleteByUserIdAndTenantId(userId, tenantCode);
+    public void deleteByUserIdAndTenantCode(Long userId, String tenantCode) {
+        refreshTokenRepository.deleteByUserIdAndTenantCode(userId, tenantCode);
     }
 
     @Override

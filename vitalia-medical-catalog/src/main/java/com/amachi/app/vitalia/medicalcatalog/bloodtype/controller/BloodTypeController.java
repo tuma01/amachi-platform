@@ -35,17 +35,14 @@ public class BloodTypeController extends BaseController implements BloodTypeApi 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<BloodTypeDto> createBloodType(@Valid @RequestBody @NonNull BloodTypeDto dto) {
-        BloodType entity = mapper.toEntity(dto);
-        BloodType savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        BloodType savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<BloodTypeDto> updateBloodType(@NonNull Long id, @Valid @RequestBody @NonNull BloodTypeDto dto) {
-        BloodType existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        BloodType updatedEntity = service.update(id, existingEntity);
+        BloodType updatedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 

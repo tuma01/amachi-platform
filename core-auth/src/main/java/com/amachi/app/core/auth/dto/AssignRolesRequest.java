@@ -17,15 +17,11 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Schema(name = "AssignRolesRequest", description = "Assign or unassign role names to a user in a tenant")
+@Schema(name = "AssignRolesRequest", description = "Assign or unassign role names to a user in the current tenant context")
 public class AssignRolesRequest {
     @NotNull
     @Schema(description = "ID del usuario", example = "1")
     private Long userId;
-
-    @NotNull
-    @Schema(description = "ID del tenant", example = "1")
-    private Long tenantId;
 
     @NotEmpty
     @Schema(description = "Lista de nombres de roles a asignar o desasignar", example = "[\"ADMIN\", \"USER\"]")

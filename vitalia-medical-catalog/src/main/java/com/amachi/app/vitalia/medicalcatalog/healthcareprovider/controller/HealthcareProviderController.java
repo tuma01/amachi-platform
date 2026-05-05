@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.healthcareprovider.dto.HealthcarePr
 import com.amachi.app.vitalia.medicalcatalog.healthcareprovider.dto.search.HealthcareProviderSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.healthcareprovider.entity.HealthcareProvider;
 import com.amachi.app.vitalia.medicalcatalog.healthcareprovider.mapper.HealthcareProviderMapper;
-import com.amachi.app.vitalia.medicalcatalog.healthcareprovider.service.impl.HealthcareProviderServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.healthcareprovider.service.HealthcareProviderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class HealthcareProviderController extends BaseController implements HealthcareProviderApi {
 
-    private final HealthcareProviderServiceImpl service;
+    private final HealthcareProviderService service;
     private final HealthcareProviderMapper mapper;
 
     @Override
@@ -37,17 +37,14 @@ public class HealthcareProviderController extends BaseController implements Heal
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<HealthcareProviderDto> createProvider(@Valid @RequestBody @NonNull HealthcareProviderDto dto) {
-        HealthcareProvider entity = mapper.toEntity(dto);
-        HealthcareProvider savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        HealthcareProvider savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<HealthcareProviderDto> updateProvider(@NonNull Long id, @Valid @RequestBody @NonNull HealthcareProviderDto dto) {
-        HealthcareProvider existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        HealthcareProvider savedEntity = service.update(id, existing);
+        HealthcareProvider savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

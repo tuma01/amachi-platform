@@ -1,25 +1,27 @@
 package com.amachi.app.core.management.tenantconfig.entity;
 
-import com.amachi.app.core.common.entity.BaseTenantEntity;
+import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.core.common.enums.SubscriptionPlan;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import jakarta.persistence.*;
-import lombok.*;
 import lombok.experimental.SuperBuilder;
+import lombok.*;
+
 
 import java.time.LocalDate;
 
 @Entity
 @Table(name = "MGT_TENANT_CONFIG")
 @Getter
+@SuperBuilder
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class TenantConfig extends BaseTenantEntity {
 
-    @OneToOne(fetch = FetchType.LAZY, cascade = {CascadeType.MERGE})
-    @JoinColumn(name = "TENANT_ID", referencedColumnName = "CODE", nullable = false, foreignKey = @ForeignKey(name = "FK_TENANTCONFIG_TENANT"))
+public class TenantConfig extends AuditableTenantEntity {
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "TENANT_ID", insertable = false, updatable = false, foreignKey = @ForeignKey(name = "FK_TENANT_CONFIG_TENANT"))
     private Tenant tenant;
 
     @Column(name = "FALLBACK_HEADER", length = 100)
@@ -69,8 +71,6 @@ public class TenantConfig extends BaseTenantEntity {
     @PrePersist
     @PreUpdate
     private void normalizeConfig() {
-        if (this.tenant != null && getTenantId() == null) {
-            setTenantId(this.tenant.getCode());
-        }
+        // Normalización manejada por la clase base AuditableTenantEntity
     }
 }

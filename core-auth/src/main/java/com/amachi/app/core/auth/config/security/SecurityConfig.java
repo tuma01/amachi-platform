@@ -65,12 +65,23 @@ public class SecurityConfig {
                                                 .requestMatchers("/super-admin/tenants/**",
                                                                 "/super-admin/tenant-admins/**")
                                                 .hasRole("SUPER_ADMIN")
+
                                                 .requestMatchers(HttpMethod.GET, "/countries/**", "/states/**", "/provinces/**",
-                                                                "/municipalitys/**", "/addresses/**")
+                                                        "/municipalities/**", "/addresses/**")
                                                 .authenticated()
-                                                .requestMatchers("/countries/**", "/states/**", "/provinces/**",
-                                                                "/municipalitys/**", "/addresses/**")
+
+                                                .requestMatchers(HttpMethod.POST, "/countries/**", "/states/**", "/provinces/**",
+                                                        "/municipalities/**", "/addresses/**")
                                                 .hasRole("SUPER_ADMIN")
+
+                                                .requestMatchers(HttpMethod.PUT, "/countries/**", "/states/**", "/provinces/**",
+                                                        "/municipalities/**", "/addresses/**")
+                                                .hasRole("SUPER_ADMIN")
+
+                                                .requestMatchers(HttpMethod.DELETE, "/countries/**", "/states/**", "/provinces/**",
+                                                        "/municipalities/**", "/addresses/**")
+                                                .hasRole("SUPER_ADMIN")
+
                                                 .requestMatchers("/employee/**").hasRole("ADMIN")
                                                 .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
                                                 .requestMatchers(HttpMethod.GET, "/doctor/**")
@@ -93,11 +104,8 @@ public class SecurityConfig {
                                 // 🔹 Provider personalizado
                                 .authenticationProvider(authenticationProvider)
 
-                                // 🔹 Incluir filtro JWT antes del UsernamePasswordAuthenticationFilter
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                                // 🔹 Incluir MultiTenantFilter antes del JWT Filter (para tener el contexto
-                                // listo)
-                                .addFilterBefore(multiTenantFilter, JwtAuthenticationFilter.class);
+                                .addFilterBefore(multiTenantFilter, UsernamePasswordAuthenticationFilter.class)
+                                .addFilterAfter(jwtAuthFilter, MultiTenantFilter.class);
 
                 // 🔹 Configuraciones especiales para entorno dev
                 if ("dev".equalsIgnoreCase(activeProfile)) {
@@ -111,14 +119,16 @@ public class SecurityConfig {
         public CorsConfigurationSource corsConfigurationSource() {
                 CorsConfiguration configuration = new CorsConfiguration();
 
-                // 🔹 En local, permite subdominios y front Angular
+                // Producción: subdominios de vitalia.com
+                // Desarrollo: localhost con cualquier puerto y subdominios *.localhost (simulación local)
+                // X-Tenant-Code se mantiene como header permitido únicamente para dev (fallback del filter)
                 configuration.setAllowedOriginPatterns(List.of(
+                                "https://*.vitalia.com",
                                 "http://localhost:*",
                                 "http://*.localhost:*"));
 
                 configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-                configuration.setAllowedHeaders(
-                                List.of("Authorization", "Content-Type", "X-Tenant-Code", "X-Tenant-ID"));
+                configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Tenant-Code"));
                 configuration.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
                 configuration.setAllowCredentials(true);
 

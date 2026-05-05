@@ -1,6 +1,7 @@
 package com.amachi.app.core.common.utils;
 
 import org.springframework.data.domain.Sort.Direction;
+import java.time.Duration;
 
 /**
  * Clase final que contiene todas las constantes de la aplicación organizadas
@@ -76,6 +77,7 @@ public final class AppConstants {
         public static final long JWT_EXPIRATION_MS = 86400000; // 24 horas
         public static final String TOKEN_HEADER = "Authorization";
         public static final String TOKEN_PREFIX = "Bearer ";
+        public static final Duration RESET_TOKEN_VALIDITY = Duration.ofHours(24);
 
         private Security() {
         }

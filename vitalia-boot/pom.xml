@@ -23,11 +23,11 @@
         </dependency>
         <dependency>
             <groupId>com.amachi.app.vitalia</groupId>
-            <artifactId>vitalia-medical</artifactId>
+            <artifactId>vitalia-medical-core</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.amachi.app.vitalia</groupId>
+            <groupId>com.amachi.app.platform</groupId>
             <artifactId>vitalia-medical-catalog</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>

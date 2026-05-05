@@ -72,17 +72,17 @@ public interface InvitationService {
     void acceptInvitation(CompleteRegistrationRequest request);
 
     /**
-     * Retrieves a paginated list of invitations for a specific tenant,
-     * optionaly filtered by status or role.
+     * Retrieves a paginated list of invitations for the current tenant context,
+     * optionally filtered by status or role. Tenant isolation is guaranteed by
+     * the Hibernate filter activated via {@code @TenantAware}.
      *
-     * @param tenantCode the code of the target tenant
      * @param status     optional status filter (PENDING, ACCEPTED, etc.)
      * @param role       optional role name filter
      * @param pageIndex  zero-based pagination index
      * @param pageSize   amount of returned row blocks
      * @return a wrapped Page containing safe InvitationResponse data
      */
-    Page<InvitationResponse> getInvitations(String tenantCode, String status, String role, Integer pageIndex, Integer pageSize);
+    Page<InvitationResponse> getInvitations(String status, String role, Integer pageIndex, Integer pageSize);
 
     /**
      * Resends an invitation email. Works by invalidating the past token entirely, 

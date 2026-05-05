@@ -11,10 +11,10 @@ import org.mapstruct.*;
 public interface BloodTypeMapper extends EntityDtoMapper<BloodType, BloodTypeDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     BloodType toEntity(BloodTypeDto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(BloodTypeDto dto, @MappingTarget BloodType entity);
 

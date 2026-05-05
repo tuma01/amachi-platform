@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface GenderMapper extends EntityDtoMapper<Gender, GenderDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     Gender toEntity(GenderDto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(GenderDto dto, @MappingTarget Gender entity);
 

@@ -20,4 +20,12 @@ public class ChangePasswordRequest {
     private String newPassword;
 
     // Se asume que el userId se obtiene del contexto de seguridad, no del cuerpo de la solicitud.
+
+    public String getOldPassword() {
+        return oldPassword;
+    }
+
+    public String getNewPassword() {
+        return newPassword;
+    }
 }

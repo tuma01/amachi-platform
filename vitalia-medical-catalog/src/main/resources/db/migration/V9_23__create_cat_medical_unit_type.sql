@@ -1,27 +1,39 @@
--- ============================================================
--- Script: V9_23__create_cat_medical_unit_type.sql
+﻿-- ============================================================
+-- Script: V2_50_23__create_cat_medical_unit_type.sql
 -- Módulo: vitalia-medical-catalog
--- Descripción: Catálogo Global de Tipos de Unidades Médicas (SaaS Elite Tier)
+-- Descripción: Creación de la tabla CAT_MEDICAL_UNIT_TYPE (SaaS Elite - Catálogo Global).
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS CAT_MEDICAL_UNIT_TYPE (
-    ID                  BIGINT AUTO_INCREMENT PRIMARY KEY,
-    CODE                VARCHAR(20) NOT NULL UNIQUE,
-    NAME                VARCHAR(150) NOT NULL,
-    DESCRIPTION         VARCHAR(500),
-    ACTIVE              BOOLEAN DEFAULT TRUE NOT NULL,
+    -- ==========================================
+    -- Identity & Base Audit (AuditableEntity)
+    -- ==========================================
+    ID                      BIGINT AUTO_INCREMENT PRIMARY KEY,
+    EXTERNAL_ID             VARCHAR(36) NOT NULL UNIQUE,
+    VERSION                 BIGINT DEFAULT 0 NOT NULL,
 
     -- ==========================================
-    -- Concurrencia e ID Externo (Elite Tier)
+    -- Catalog Data
     -- ==========================================
-    VERSION             BIGINT DEFAULT 0 NOT NULL,
-    EXTERNAL_ID         VARCHAR(36) NOT NULL UNIQUE,
+    CODE                    VARCHAR(20) NOT NULL,
+    NAME                    VARCHAR(150) NOT NULL,
+    DESCRIPTION             VARCHAR(500),
+    IS_ACTIVE               TINYINT(1) DEFAULT 1 NOT NULL,
 
     -- ==========================================
-    -- Auditoría Base (Global)
+    -- Audit Fields
     -- ==========================================
-    CREATED_BY          VARCHAR(100) NOT NULL,
-    CREATED_DATE        DATETIME(6)  NOT NULL,
-    LAST_MODIFIED_BY    VARCHAR(100),
-    LAST_MODIFIED_DATE  DATETIME(6)
+    CREATED_BY              VARCHAR(100) NOT NULL,
+    CREATED_DATE            DATETIME(6) NOT NULL,
+    LAST_MODIFIED_BY        VARCHAR(100),
+    LAST_MODIFIED_DATE      DATETIME(6),
+
+    -- ==========================================
+    -- Constraints & Indexes
+    -- ==========================================
+    CONSTRAINT UK_UNIT_TYPE_EXTERNAL_ID UNIQUE (EXTERNAL_ID),
+    CONSTRAINT UK_UNIT_TYPE_CODE UNIQUE (CODE),
+    
+    INDEX IDX_UNIT_TYPE_CODE (CODE)
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

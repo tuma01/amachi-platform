@@ -22,10 +22,8 @@ import lombok.experimental.SuperBuilder;
 )
 public class Medication extends Auditable<String> implements Model {
 
-
-
     @NotBlank(message = "Code {err.mandatory}")
-    @Column(name = "CODE", nullable = false, length = 20)
+    @Column(name = "CODE", nullable = false, length = 50)
     private String code;
 
     @NotBlank(message = "Generic Name {err.mandatory}")
@@ -44,9 +42,12 @@ public class Medication extends Auditable<String> implements Model {
     @Column(name = "PRESENTATION", length = 250)
     private String presentation;
 
+    @Column(name = "DESCRIPTION", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

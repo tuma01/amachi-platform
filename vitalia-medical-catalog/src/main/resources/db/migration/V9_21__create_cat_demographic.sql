@@ -1,51 +1,70 @@
--- ============================================================
--- Script: V9_21__create_cat_demographic.sql
+﻿-- ============================================================
+-- Script: V2_50_21__create_cat_demographic.sql
 -- Módulo: vitalia-medical-catalog
--- Descripción: Creación de CAT_GENDER y CAT_CIVIL_STATUS (SaaS Elite Tier).
--- Autor: Juan Amachi
--- Fecha: 2026-01-04
+-- Descripción: Creación de la tabla CAT_DEMOGRAPHIC (SaaS Elite - Catálogo Global).
 -- ============================================================
 
--- Tabla CAT_GENDER
 CREATE TABLE IF NOT EXISTS CAT_GENDER (
-    ID          BIGINT AUTO_INCREMENT PRIMARY KEY,
-    CODE        VARCHAR(20)  NOT NULL,
-    NAME        VARCHAR(50)  NOT NULL,
-    ACTIVE      BOOLEAN      NOT NULL DEFAULT TRUE,
+    -- ==========================================
+    -- Identity & Base Audit (AuditableEntity)
+    -- ==========================================
+    ID                      BIGINT AUTO_INCREMENT PRIMARY KEY,
+    EXTERNAL_ID             VARCHAR(36) NOT NULL UNIQUE,
+    VERSION                 BIGINT DEFAULT 0 NOT NULL,
 
-    -- Concurrencia e ID Externo (Tier Elite)
-    VERSION BIGINT NOT NULL DEFAULT 0,
-    EXTERNAL_ID VARCHAR(36)  NOT NULL UNIQUE,
+    -- ==========================================
+    -- Catalog Data
+    -- ==========================================
+    CODE                    VARCHAR(20) NOT NULL,
+    NAME                    VARCHAR(50) NOT NULL,
+    IS_ACTIVE               TINYINT(1) DEFAULT 1 NOT NULL,
 
-    -- Auditoría
-    CREATED_BY VARCHAR(100) NOT NULL,
-    CREATED_DATE DATETIME(6) NOT NULL,
-    LAST_MODIFIED_BY VARCHAR(100),
-    LAST_MODIFIED_DATE DATETIME(6),
+    -- ==========================================
+    -- Audit Fields
+    -- ==========================================
+    CREATED_BY              VARCHAR(100) NOT NULL,
+    CREATED_DATE            DATETIME(6) NOT NULL,
+    LAST_MODIFIED_BY        VARCHAR(100),
+    LAST_MODIFIED_DATE      DATETIME(6),
 
-    -- Constraints
+    -- ==========================================
+    -- Constraints & Indexes
+    -- ==========================================
     CONSTRAINT UK_GENDER_EXTERNAL_ID UNIQUE (EXTERNAL_ID),
     CONSTRAINT UK_GENDER_CODE UNIQUE (CODE),
-    INDEX IDX_GENDER_CODE   (CODE)
+    
+    INDEX IDX_GENDER_CODE (CODE)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Tabla CAT_CIVIL_STATUS
 CREATE TABLE IF NOT EXISTS CAT_CIVIL_STATUS (
-    ID          BIGINT AUTO_INCREMENT PRIMARY KEY,
-    EXTERNAL_ID VARCHAR(36)  NOT NULL,
-    CODE        VARCHAR(20)  NOT NULL,
-    NAME        VARCHAR(50)  NOT NULL,
-    ACTIVE      BOOLEAN      NOT NULL DEFAULT TRUE,
-    VERSION     BIGINT       NOT NULL DEFAULT 0,
+    -- ==========================================
+    -- Identity & Base Audit (AuditableEntity)
+    -- ==========================================
+    ID                      BIGINT AUTO_INCREMENT PRIMARY KEY,
+    EXTERNAL_ID             VARCHAR(36) NOT NULL UNIQUE,
+    VERSION                 BIGINT DEFAULT 0 NOT NULL,
 
-    -- Auditoría
-    CREATED_BY        VARCHAR(100) NOT NULL,
-    CREATED_DATE      DATETIME(6)    NOT NULL,
-    LAST_MODIFIED_BY  VARCHAR(100),
-    LAST_MODIFIED_DATE DATETIME(6),
+    -- ==========================================
+    -- Catalog Data
+    -- ==========================================
+    CODE                    VARCHAR(20) NOT NULL,
+    NAME                    VARCHAR(50) NOT NULL,
+    IS_ACTIVE               TINYINT(1) DEFAULT 1 NOT NULL,
 
-    -- Constraints
+    -- ==========================================
+    -- Audit Fields
+    -- ==========================================
+    CREATED_BY              VARCHAR(100) NOT NULL,
+    CREATED_DATE            DATETIME(6) NOT NULL,
+    LAST_MODIFIED_BY        VARCHAR(100),
+    LAST_MODIFIED_DATE      DATETIME(6),
+
+    -- ==========================================
+    -- Constraints & Indexes
+    -- ==========================================
     CONSTRAINT UK_CIVIL_STATUS_EXTERNAL_ID UNIQUE (EXTERNAL_ID),
     CONSTRAINT UK_CIVIL_STATUS_CODE UNIQUE (CODE),
-    INDEX IDX_CIVIL_STATUS_CODE   (CODE)
+    
+    INDEX IDX_CIVIL_STATUS_CODE (CODE)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

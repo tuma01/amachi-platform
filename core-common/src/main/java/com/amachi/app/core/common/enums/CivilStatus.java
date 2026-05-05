@@ -3,8 +3,6 @@ package com.amachi.app.core.common.enums;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
-@Getter
-@RequiredArgsConstructor
 public enum CivilStatus {
 
     SINGLE("Single"),
@@ -15,4 +13,12 @@ public enum CivilStatus {
     WIDOWED("Widowed");
 
     public final String label;
+
+    CivilStatus(String label) {
+        this.label = label;
+    }
+
+    public String getLabel() {
+        return label;
+    }
 }

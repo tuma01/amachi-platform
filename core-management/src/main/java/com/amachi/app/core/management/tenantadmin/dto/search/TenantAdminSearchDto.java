@@ -2,29 +2,22 @@ package com.amachi.app.core.management.tenantadmin.dto.search;
 
 import com.amachi.app.core.common.dto.BaseSearchDto;
 import io.swagger.v3.oas.annotations.Hidden;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+/**
+ * Filtros de búsqueda para administradores de tenant (SaaS Elite Tier).
+ * Jerarquía corregida: extends BaseSearchDto.
+ */
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Hidden
-public class TenantAdminSearchDto implements BaseSearchDto {
-
-    private Long id;
+public class TenantAdminSearchDto extends BaseSearchDto {
     private String tenantCode;
     private String email;
     private String firstName;
     private String lastName;
     private Boolean enabled;
-
-    @Override
-    public Long getId() {
-        return id;
-    }
-
-
 }

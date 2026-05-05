@@ -1,10 +1,11 @@
 package com.amachi.app.core.auth.entity;
 
-import com.amachi.app.core.common.entity.BaseTenantEntity;
+import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import jakarta.persistence.*;
-import lombok.*;
 import lombok.experimental.SuperBuilder;
+import lombok.*;
+
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -15,13 +16,14 @@ import java.time.Instant;
         @UniqueConstraint(name = "UK_REFRESH_TOKEN_TOKEN", columnNames = "TOKEN")
 })
 @Getter
-@Setter
 @SuperBuilder
+@Setter
+
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
 @EqualsAndHashCode(onlyExplicitlyIncluded = true, callSuper = false)
-public class RefreshToken extends BaseTenantEntity {
+public class RefreshToken extends AuditableTenantEntity {
 
     // ID heredado de BaseEntity
 
@@ -29,13 +31,12 @@ public class RefreshToken extends BaseTenantEntity {
     private String token;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "USER_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_REFRESH_TOKEN_USER"))
+    @JoinColumn(name = "FK_ID_USER", nullable = false, foreignKey = @ForeignKey(name = "FK_REFRESH_TOKEN_USER"))
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
         name = "TENANT_ID",
-        referencedColumnName = "CODE",
         nullable = false,
         insertable = false,
         updatable = false,
@@ -49,7 +50,6 @@ public class RefreshToken extends BaseTenantEntity {
     @CreatedDate
     @Column(name = "CREATED_AT", nullable = false, updatable = false)
     private Instant createdAt;
-
     @Builder.Default
     @Column(name = "REVOKED", nullable = false)
     private boolean revoked = false;

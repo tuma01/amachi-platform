@@ -43,7 +43,7 @@ class AllergyServiceImplTest {
         entity.setCode("ALL-001");
         entity.setName("Penicilina");
         entity.setType("DRUG");
-        entity.setActive(true);
+        entity.setDescription("Alergia a la penicilina");
     }
 
     @Test

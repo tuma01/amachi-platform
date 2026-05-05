@@ -11,11 +11,11 @@ import org.mapstruct.*;
 public interface ProvinceMapper extends EntityDtoMapper<Province, ProvinceDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @Mapping(target = "state.id", source = "stateId")
     Province toEntity(ProvinceDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", source = "id", ignore = true)
     @Mapping(target = "state.id", source = "stateId")

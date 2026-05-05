@@ -1,6 +1,9 @@
 package com.amachi.app.core.management.provider;
 
+import com.amachi.app.core.auth.entity.User;
+import com.amachi.app.core.auth.repository.UserRepository;
 import com.amachi.app.core.common.enums.DomainContext;
+import com.amachi.app.core.common.enums.SuperAdminLevel;
 import com.amachi.app.core.common.enums.TenantAdminLevel;
 import com.amachi.app.core.domain.entity.Person;
 import com.amachi.app.core.domain.person.service.DomainEntityProvider;
@@ -24,6 +27,7 @@ public class ManagementDomainEntityProvider implements DomainEntityProvider {
 
     private final SuperAdminRepository  superAdminRepository;
     private final TenantAdminRepository tenantAdminRepository;
+    private final UserRepository userRepository;
 
     @Override
     public boolean supports(DomainContext context) {
@@ -51,21 +55,34 @@ public class ManagementDomainEntityProvider implements DomainEntityProvider {
     }
 
     private void createSuperAdmin(Person person, Tenant tenant) {
+        User user = userRepository.findByPerson(person)
+                .orElseThrow(() -> new IllegalStateException("User not found for person: " + person.getEmail()));
+
         SuperAdmin superAdmin = SuperAdmin.builder()
                 .person(person)
-                .tenantId("SYSTEM")
+                .user(user)
+                .tenantCode("SYSTEM")
+                .tenantId(0L) // System level
+                .level(SuperAdminLevel.LEVEL_1)
                 .globalAccess(true)
                 .build();
         superAdminRepository.save(superAdmin);
     }
 
     private void createTenantAdmin(Person person, Tenant tenant) {
+        User user = userRepository.findByPerson(person)
+                .orElseThrow(() -> new IllegalStateException("User not found for person: " + person.getEmail()));
+
         TenantAdmin tenantAdmin = TenantAdmin.builder()
                 .person(person)
+                .user(user)
                 .tenant(tenant)
-                .tenantId(tenant.getCode())
-                .adminLevel(TenantAdminLevel.FULL)
+                .adminLevel(TenantAdminLevel.LEVEL_1)
                 .build();
+        
+        tenantAdmin.setTenantId(tenant.getId());
+        tenantAdmin.setTenantCode(tenant.getCode());
+
         tenantAdminRepository.save(tenantAdmin);
     }
 }

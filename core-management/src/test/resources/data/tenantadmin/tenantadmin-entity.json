@@ -1,37 +1,30 @@
 {
   "id": 1,
-  "nationalId": "12345677",
-  "nationalHealthId": "NH-999",
-  "personType": "ADMIN",
-  "firstName": "Felix",
-  "middleName": "Admin",
-  "lastName": "Fernandez",
-  "secondLastName": "Creator",
-  "birthDate": "2000-06-15",
-  "maritalStatus": "SOLTERO",
-  "gender": "MASCULINO",
-  "phoneNumber": "555-0000",
-  "mobileNumber": "999-9999",
+  "tenantId": 1,
+  "tenantCode": "TENANT001",
   "adminLevel": "LEVEL_1",
-  "address": {
-    "id": 100,
-    "numero": "22",
-    "direccion": "Jean Talon",
-    "ciudad": "Cochabamba",
-    "country": {
-      "id": 26
-    },
-    "state": {
-      "id": 2
-    }
+
+  "person": {
+    "id": 10,
+    "firstName": "Felix",
+    "middleName": "Admin",
+    "lastName": "Fernandez",
+    "secondLastName": "Creator",
+    "birthDate": "2000-06-15",
+    "maritalStatus": "SINGLE",
+    "gender": "MALE",
+    "phoneNumber": "555-0000",
+    "mobileNumber": "999-9999"
   },
+
   "tenant": {
     "id": 1,
     "code": "TENANT001",
     "name": "Clinica del Norte",
     "type": "CLINIC",
-    "isActive": true
+    "active": true
   },
+
   "user": {
     "id": 50,
     "email": "nuevo_admin@clinicnorte.com",
@@ -39,4 +32,3 @@
     "accountLocked": false
   }
 }
-

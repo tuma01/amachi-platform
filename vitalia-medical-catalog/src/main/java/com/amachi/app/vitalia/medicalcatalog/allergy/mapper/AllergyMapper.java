@@ -11,10 +11,10 @@ import org.mapstruct.*;
 public interface AllergyMapper extends EntityDtoMapper<Allergy, AllergyDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     Allergy toEntity(AllergyDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(AllergyDto dto, @MappingTarget Allergy entity);
 

@@ -35,16 +35,13 @@ public class StateController extends BaseController implements StateApi {
 
     @Override
     public ResponseEntity<StateDto> createState(@Valid @RequestBody @NonNull StateDto dto) {
-        State entity = mapper.toEntity(dto);
-        State savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        State savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     public ResponseEntity<StateDto> updateState(@NonNull Long id, @Valid @RequestBody @NonNull StateDto dto) {
-        State existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        State updatedEntity = service.update(id, existingEntity);
+        State updatedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 

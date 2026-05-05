@@ -37,17 +37,14 @@ public class Icd10Controller extends BaseController implements Icd10Api {
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Icd10Dto> createIcd10(@Valid @RequestBody @NonNull Icd10Dto dto) {
-        Icd10 entity = mapper.toEntity(dto);
-        Icd10 savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Icd10 savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Icd10Dto> updateIcd10(@NonNull Long id, @Valid @RequestBody @NonNull Icd10Dto dto) {
-        Icd10 existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        Icd10 savedEntity = service.update(id, existing);
+        Icd10 savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

@@ -6,6 +6,8 @@
     "officialEmail": "contact@sura.com",
     "officialPhone": "+573000000000",
     "active": true,
+    "website": "https://www.sura.com",
+    "logoUrl": "https://www.sura.com/logo.png",
     "createdBy": "system",
     "createdDate": "2024-01-01T10:00:00",
     "version": 0,

@@ -1,267 +1,240 @@
-# 🏗️ SaaS Elite Tier Elevation: Global Audit & Strategic Refactoring Plan
+# 🚀 SaaS Elite Tier: Backend Architecture Guide
 
-This document provides a comprehensive analysis of the current state of **amachi-platform** and outlines the global strategy for elevating all modules to the **SaaS Elite Tier** architectural standard.
-
-## 1. 📊 Global Current State Analysis
-
-| Module | Architectural Level | SaaS Elite Adherence | Key Observation |
-|:---|:---:|:---:|:---|
-| **core-common** | **Elite** | 100% | The kernel is ready. BaseEntity/Service/Spec follow Tier-1 standards. |
-| **core-auth** | **Elite** | 100% | Identity management is decoupled and event-driven. |
-| **core-management** | **Elite** | 100% | Tenant and Theme management updated to standards. |
-| **core-geography** | **Elite** | 95% | Solid structure. Minor naming alignment in State/Municipality. |
-| **core-domain** | **Elite** | 100% | **IDENTITY LAYER REFACTORED**. Person (Global) and Hospital (Tenant) standardized. |
-| **vitalia-medical-catalog**| **High Gold** | 80% | Medication/Allergy updated. Other catalogs need BaseService migration. |
-| **vitalia-medical** | **Gold** | 60% | Functional but monolithic. Needs global refactoring and tenant isolation. |
-| **vitalia-boot** | **Solid** | 90% | Good orchestration. Needs final global filter registration. |
+## 🛡️ 1. GOLDEN PROTOCOL: REGLAS CRÍTICAS DE ESTABILIDAD
+*   **ANÁLISIS DE IMPACTO GLOBAL**: Todo cambio en el Backend debe verificar su regresión en el Frontend (contratos, tipos, DTOs). 
+*   **SINCRONIZACIÓN DE API (MANDATORIO)**: Tras modificar DTOs o Controllers: `mvn clean install` -> Actualizar `openapi.json` -> `npm run gen-api`.
+*   **REGLA DE IDIOMA**: Nombres exclusivamente en **INGLÉS** y en **SINGULAR** (excepto `core-geography`).
+*   **CERO PARCHES**: Prohibido usar `@Hidden` para ocultar errores de contrato.
 
 ---
 
-## 2. 🎯 The "SaaS Elite" Target Standard
+## 🔑 2. MULTI-TENANCY (Platform-as-a-Tenant)
 
-To achieve pure Elite status, every module must strictly comply with its scope:
+### 2.1 Identificadores del Tenant
+*   **`id` (Long)**: PK técnica interna. Prohibido exponerla.
+*   **`code` (String)**: El identificador de negocio (ej: `hospital-san-borja`).
+*   **`tenantId` (Long)**: Columna `TENANT_ID`. Almacena el ID interno del tenant.
+*   **Platform-as-a-Tenant**: El tenant de los tenants es `GLOBAL` (dueño de `DMN_TENANT`).
 
-### A. Global Entities (Common Catalogs & Root Identity)
-*   **Scope**: Data shared across all tenants (e.g., Countries, Provinces, Medical Standards).
-*   **Core Entity**: **`Person`** (Shared Identity Pattern). Personal biological data belongs to the human, not the hospital.
-*   **Hierarchy**: Must extend **`Auditable`** (which provides ID, Audit, Version and ExternalId).
-*   **Isolation**: No isolation. These entities **DO NOT** contain `TENANT_ID`.
-*   **Mapper Config**: Use **`@AuditableIgnoreConfig.IgnoreAuditableFields`** (Ignores Audit, Version, ExternalId).
+### 2.2 Flujo de Petición (Contexto)
+1. `MultiTenantFilter` captura el **header `X-Tenant-Code`** (local/dev) o el **subdominio** del host (producción).
+2. `TenantContext` almacena `tenantId` y `tenantCode` en `ThreadLocal`.
+3. `TenantFilterAspect` activa el `tenantFilter` de Hibernate.
+4. `@PrePersist` inyecta automáticamente el `tenantId` en nuevas entidades.
 
-### B. Tenant-Scoped Entities (SaaS Elevation)
-*   **Scope**: Data private and isolated by organization (e.g., Patients, Medical Visits, Appointments).
-*   **Hierarchy**: Must extend **`BaseTenantEntity`** (which extends `Auditable` and adds `TENANT_ID`).
-*   **Systemic Multi-Tenancy**: Zero manual `tenantId` handling. Isolated automatically via Hibernate Filters.
-*   **Mapper Config**: Use **`@AuditableIgnoreConfig.IgnoreTenantAuditableFields`** (Ignores Audit, Version, ExternalId and **TenantId**).
+### 2.3 Resolución del TenantCode por Entorno
 
-> [!IMPORTANT]
-> **Caso especial — Entidad `Tenant` (tabla `DMN_TENANT`)**
-> La entidad `Tenant` también extiende `BaseTenantEntity`, pero su campo `TENANT_ID` siempre vale `"SYSTEM"`.
-> Esto es **intencional y correcto**: la tabla `DMN_TENANT` es el registro central de la plataforma Vitalia/Amachi,
-> no de un hospital específico. Su propietario es `SYSTEM` — el nivel raíz de la plataforma.
-> Todos los hospitales registrados en `DMN_TENANT` tendrán `TENANT_ID = "SYSTEM"`.
-> Esto garantiza que **solo el SuperAdmin** (quien hace bypass del filtro Hibernate) pueda ver y gestionar todos los tenants.
-> Los usuarios normales no pueden ver la tabla `DMN_TENANT` porque su filtro activo (`TENANT_ID = 'hospital-san-borja'`) no coincide con `SYSTEM`.
+| Entorno | Fuente del TenantCode | Ejemplo |
+|---|---|---|
+| **Producción** | Subdominio del host | `hospital-san-borja.vitalia.com` → `hospital-san-borja` |
+| **Local / Dev** | Header HTTP `X-Tenant-Code` | `X-Tenant-Code: GLOBAL` |
 
-### C. Estándar de Configuración de Mappers (MapStruct)
+> **REGLA**: El `tenantCode` **NUNCA** viaja en el body del request. Es un concepto de routing/infraestructura, no de credenciales.
 
-Para evitar errores de compilación (`Unknown Property`) y asegurar el aislamiento multi-tenant, se debe seguir estrictamente este estándar en `AuditableIgnoreConfig.java`:
+### 2.4 Llamada de Login (Referencia)
 
-```java
-@MapperConfig
-public interface AuditableIgnoreConfig {
-    // 🌍 Entidades GLOBALES: NO contienen tenantId
-    @Mapping(target = "version", ignore = true)
-    @Mapping(target = "externalId", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "createdDate", ignore = true)
-    @interface IgnoreAuditableFields {}
+```http
+POST /api/v1/auth/login
+X-Tenant-Code: GLOBAL
+Content-Type: application/json
 
-    // 🏢 Entidades de INQUILINO: SÍ contienen tenantId y debe ser ignorado
-    @Mapping(target = "tenantId", ignore = true)
-    @Mapping(target = "version", ignore = true)
-    @Mapping(target = "externalId", ignore = true)
-    @Mapping(target = "createdBy", ignore = true)
-    @Mapping(target = "createdDate", ignore = true)
-    @interface IgnoreTenantAuditableFields {}
+{
+  "email": "superadmin-dev@test.com",
+  "password": "dev-password"
 }
 ```
 
-### D. Modelos de Referencia Obligatorios
+**Para el tenant de hospital:**
+```http
+POST /api/v1/auth/login
+X-Tenant-Code: hospital-san-borja
+Content-Type: application/json
 
-> [!IMPORTANT]
-> Antes de implementar cualquier nueva entidad, el asistente de IA y el desarrollador **DEBEN** consultar el template correspondiente y replicar su patrón al 100%.
+{
+  "email": "admin-dev@test.com",
+  "password": "dev-password"
+}
+```
 
-#### 🌍 Template Global — Entidad `Country` (`core-geography`)
+### 2.5 TenantContext — API Correcta
 
-Para catálogos compartidos sin aislamiento por tenant:
+```java
+// ✅ CORRECTO
+TenantContext.getTenantId()    // → Long
+TenantContext.getTenantCode()  // → String
+TenantContext.setTenantId(id)
+TenantContext.setTenantCode(code)
+TenantContext.clear()
 
-| Componente | Archivo de referencia |
-|---|---|
-| Entidad | `Country.java` → extiende `Auditable<String>` |
-| DTO | `CountryDto.java` → sin `tenantId`, sin campos de auditoría |
-| Mapper | `CountryMapper.java` → usa `@IgnoreAuditableFields` |
-| DDL | `V2_1__create_geo_country.sql` → sin columna `TENANT_ID` |
+// ❌ NO EXISTEN — no usar
+TenantContext.getCurrentTenantId()
+TenantContext.getCurrentTenantCode()
+```
 
-#### 🏥 Template Tenant-Scoped — Entidad `Appointment` (`vitalia-medical`) ✅ VALIDADO
+### 2.6 Orden de Filtros y TenantContext
 
-Para datos de negocio aislados por organización. **Este template ha sido completamente validado** y debe usarse como referencia exacta para todas las entidades del módulo `vitalia-medical`:
+**CRÍTICO**: `JwtAuthenticationFilter` **NO debe** llamar `TenantContext.clear()` al inicio. El `MultiTenantFilter` lo setea primero y el JWT filter lo sobreescribe solo para endpoints protegidos (con token). La limpieza final ocurre en el bloque `finally` de ambos filtros.
 
-| Componente | Archivo de referencia | Estado |
-|---|---|:---:|
-| Entidad | `Appointment.java` → extiende `BaseTenantEntity`, implementa `SoftDeletable` | ✅ |
-| DTO | `AppointmentDto.java` → FKs como Long, campos READ_ONLY con `Schema.AccessMode` | ✅ |
-| Mapper | `AppointmentMapper.java` → `@IgnoreTenantAuditableFields`, locks protegidos | ✅ |
-| Service | `AppointmentServiceImpl.java` → extiende `BaseService`, event-driven | ✅ |
-| Specification | `AppointmentSpecification.java` → extiende `BaseSpecification` | ✅ |
-| API | `AppointmentApi.java` → `@NonNull`, `@Valid`, paginación correcta | ✅ |
-| SearchDto | `AppointmentSearchDto.java` → sin `tenantId`, filtros de negocio only | ✅ |
-| DDL CREATE | `V5_11__create_med_appointment.sql` → `DATETIME(6)`, 5 índices, FK completas | ✅ |
-| DDL Relación | `V5_12__create_med_reminder.sql` → tabla hija con todos sus campos | ✅ |
+```
+Request → MultiTenantFilter (set TenantContext)
+               → JwtAuthenticationFilter (NO clear al inicio)
+                    → Si tiene JWT válido: sobreescribe TenantContext con valores del token
+                    → Si NO tiene JWT (endpoint público): TenantContext del MultiTenantFilter se preserva
+                    → finally: TenantContext.clear()
+               → finally: TenantContext.clear()
+```
 
-### 🚨 Protocolo Crítico: Análisis de Identidad (MANDATORIO)
-**ANTES de crear o modificar cualquier entidad**, el asistente de IA **DEBE PREGUNTAR** al usuario si el recurso pertenece al alcance **Global** o **SaaS Elite**.
-*   **PROHIBICIÓN**: El asistente NO tiene autorización para decidir el alcance por cuenta propia.
-*   **ANÁLISIS**: Se debe realizar un análisis conjunto del impacto antes de tocar el código.
+---
 
-### ⛔ Módulos Prohibidos para Aislamiento (REGLA DE ORO)
-Está **TERMINANTEMENTE PROHIBIDO** elevar a nivel SaaS Elite (aislamiento por `TENANT_ID`) los siguientes módulos, ya que son **CATÁLOGOS GLOBALES** estándar:
-1.  **`core-geography`**: Países, Provinces, etc.
-2.  **`vitalia-medical-catalog`**: Alergias, CIE-10, Medicamentos, Vacunas, Procedimientos, Especialidades, Parentescos, Tipos de Identificación, Géneros y Estados Civiles.
-*   **Razón**: Estos módulos representan conocimiento médico y demográfico universal. Su fragmentación por Tenant es un error arquitectónico grave, crea redundancia masiva y dificulta el intercambio de datos (Interoperabilidad).
+## 🏗️ 3. ENTITY & DATA LAYER GOVERNANCE
 
-### D. Common Requirements (All Entities)
-1.  **Event-Driven Consistency**: Every mutating operation (Create/Update/Delete) must publish a `DomainEvent`.
-2.  **Premium Resilience**: Optimistic Locking (`@Version`) and globally unique `EXTERNAL_ID` (UUID).
-3.  **Professional Standardization**: 100% English naming for all JPA entities, services, and APIs.
-4.  **Backend Naming Convention**:
-    *   **Packages**: Always **singular** (e.g., `com.amachi.app.core.geography.country`).
-    *   **Entities**: Always **singular** (e.g., `Country.java`).
-    *   **API/Endpoints**: Always **plural** (e.g., `/api/v1/countries`).
-    *   **Controllers/Services**: Follow the entity name (singular) or purpose (e.g., `CountryController`).
+### 3.1 Jerarquía de Clases Base
 
-### E. 🔑 Patrón Platform-as-a-Tenant (Referencia Definitiva)
+| Clase Base | Campos añadidos | Uso |
+|---|---|---|
+| `BaseEntity` | `id` | Raíz. PK técnica. |
+| `Auditable<U>` | Auditoría + `@Version` + `EXTERNAL_ID` | Entidades **globales** (catálogos, Person, Tenant, Role). |
+| `AuditableTenantEntity` | + `TENANT_ID` + `TENANT_CODE` + `IS_DELETED` | Entidades **tenant-scoped** (Patient, Doctor, Appointment…). |
 
-Esta sección documenta cómo funciona el aislamiento multi-tenant de extremo a extremo en Amachi Platform.
+### 3.2 Soft Delete (Declarative Isolation)
+*   **Mecanismo**: `@SQLRestriction("IS_DELETED = false")`.
+*   **Smart Delete**: El `BaseService` decide automáticamente entre borrado físico o lógico basado en el tipo de entidad.
 
-#### Los 3 identificadores del Tenant y su rol exacto
+### 3.3 Repositories & Specifications
+*   **Pattern**: Extender siempre `CommonRepository<E, ID>` (global) o `TenantCommonRepository<E, ID>` (tenant-scoped).
+*   **Proyecciones de Rendimiento**: Para listados masivos de roles (`Doctor`, `Patient`), usar **Interface Projections** para evitar el problema N+1 y el overhead de instanciar grafos completos de `Person`.
 
-| Campo | Tipo | Ubicación | Para qué sirve |
+### 3.4 Regla de Entidades con @Version en Relaciones FK
+
+**PROBLEMA**: Hibernate 6.x rechaza objetos "shell" en el grafo de entidades. Un shell object es una instancia creada con solo el `id` (`new Country(); country.setId(26)`), cuyo `@Version` queda `null`. Hibernate lo trata como entidad "detached" con versión inválida y lanza `PropertyValueException`.
+
+**SOLUCIÓN**: Usar `entityManager.getReference(EntityClass.class, id)` para FK references. Crea un proxy Hibernate managed (sin query a la DB) que satisface la validación de versión.
+
+```java
+// ✅ CORRECTO — proxy managed, sin query
+address.setCountry(em.getReference(Country.class, dto.getCountryId()));
+
+// ❌ INCORRECTO — shell object, version=null, Hibernate 6.x lo rechaza
+Country shell = new Country();
+shell.setId(dto.getCountryId());
+address.setCountry(shell);
+
+// ❌ TAMBIÉN INCORRECTO — MapStruct crea shell internamente
+@Mapping(target = "country.id", source = "countryId")  // → new Country(id=X, version=null)
+```
+
+---
+
+## 🔄 4. MAPPERS & DTO STANDARDS (Staff Level)
+
+### 4.1 Principios Generales
+*   **DTO-First**: Los DTOs **nunca** incluyen `tenantId`, `version`, `isDeleted` ni campos de auditoría.
+*   **Interface-Only**: Todos los mappers son **interfaces** (no clases abstractas). MapStruct genera la implementación.
+*   **Prohibición de round-trips**: `Entity → DTO → Entity`.
+
+### 4.2 AuditableIgnoreConfig — Regla de Selección
+
+Cada mapper debe usar la anotación correcta según la clase base de la entidad destino:
+
+| Anotación | Entidades | Campos ignorados |
+|---|---|---|
+| `@IgnorePureAuditableFields` | Extienden `Auditable<String>` **sin** `tenantId` propio: `Country`, `State`, `Province`, `Municipality`, `Person`, `Icd10`, `Medication`, todos los catálogos médicos | `createdBy`, `createdDate`, `lastModifiedBy`, `lastModifiedDate`, `version`, `externalId` |
+| `@IgnoreHybridAuditableFields` | Extienden `Auditable<String>` **con** `tenantId` propio (default 0/GLOBAL): `Role`, `Tenant`, `Theme`, `Hospital` | + `tenantId`, `tenantCode` |
+| `@IgnoreTenantAuditableFields` | Extienden `AuditableTenantEntity`: `Patient`, `Doctor`, `Appointment`, `TenantConfig`, `Avatar`, etc. | + `tenantId`, `tenantCode` |
+
+> **`@IgnoreAuditableFields` fue eliminada**. Era un alias ambiguo que causaba errores de compilación al usarse en entidades sin `tenantId`.
+
+### 4.3 MapStruct Elite
+*   `InjectionStrategy.CONSTRUCTOR` (configurado en `BaseMapperConfig`).
+*   `unmappedTargetPolicy = ReportingPolicy.WARN` — campos sin mapping generan warning, no error de compilación. MapStruct auto-mapea por nombre.
+*   Configuración mandatoria vía `AuditableIgnoreConfig`.
+
+### 4.4 FK References a Entidades con @Version
+
+**Regla**: Cuando un mapper necesita mapear un ID de DTO a una relación `@ManyToOne` con una entidad que tiene `@Version`, **NO usar** `@Mapping(target = "entity.id", source = "entityId")`. En su lugar, ignorar en el mapper y resolver en el servicio via `em.getReference()`.
+
+```java
+// AddressMapper.java — CORRECTO
+@Mapping(target = "country",      ignore = true)  // ← ignorado en mapper
+@Mapping(target = "state",        ignore = true)
+@Mapping(target = "province",     ignore = true)
+@Mapping(target = "municipality", ignore = true)
+Address toEntity(AddressDto dto);
+
+// AddressServiceImpl.java — resolución en el servicio
+@Override
+protected Address mapToEntity(AddressDto dto) {
+    Address address = mapper.toEntity(dto);
+    resolveGeographicRefs(dto, address);  // ← aquí se resuelven
+    return address;
+}
+
+private void resolveGeographicRefs(AddressDto dto, Address address) {
+    address.setCountry(dto.getCountryId() != null
+        ? em.getReference(Country.class, dto.getCountryId()) : null);
+    address.setState(dto.getStateId() != null
+        ? em.getReference(State.class, dto.getStateId()) : null);
+    // ... igual para province y municipality
+}
+```
+
+---
+
+## 📡 5. SERVICE LAYER & API CONTRACTS
+
+### 5.1 Estructura de Servicios
+*   **GenericService**: Implementación de los hooks `mapToEntity` y `mergeEntities`.
+*   **Validación API**: Uso de `@Valid`, `@NonNull` y contratos OpenAPI autodocumentados.
+*   **Transaccionalidad**: Frontera transaccional explícita en las implementaciones `*ServiceImpl`. Clase anotada con `@Transactional(readOnly = true)`, métodos de escritura con `@Transactional`.
+
+### 5.2 Controllers — Reglas
+*   Patrón: `*Api` (interface OpenAPI) + `*Controller` (implementación).
+*   URL base: siempre `AppConstants.Url.API_V1 + "/resource"` (nunca hardcoded).
+*   Inyectar la **interfaz** del servicio, no la implementación concreta (`AppointmentService`, no `AppointmentServiceImpl`).
+
+---
+
+## 🏥 6. VITALIA CLINICAL FLOW (EHR Tier)
+*   **Separación HL7 FHIR**: Logística (`Appointment`) vs Acto Médico (`Encounter`).
+*   **Registro Atómico**: Diagnósticos (`Condition`), Observaciones (`Observation`) y Recetas (`MedicationRequest`).
+*   **Timeline Unificado**: Uso de `ClinicalHistoryStream` para visualización 360°.
+
+---
+
+## 🗄️ 7. DATABASE & FLYWAY STANDARDS
+*   **Trigramas**: `CAT_` (Catálogos), `MED_` (Médico), `DMN_` (Dominio/SaaS).
+*   **Flyway**: Un script SQL por recurso. Prohibidos los `ALTER TABLE` en desarrollo.
+*   **Tipos**: `IS_DELETED` (Boolean), `TENANT_ID` (Varchar 50).
+*   **Índices**: Obligatorio incluir `TENANT_ID` en índices de búsqueda.
+
+---
+
+## ⚙️ 8. SPRING BOOT & INFRAESTRUCTURA
+
+### 8.1 spring-data-envers vs hibernate-envers
+
+Se usa `spring-data-envers` (gestionado por Spring Boot BOM) para aprovechar la gestión de versiones compatible. **No se usa `RevisionRepository`** — solo se requiere el soporte de `@Audited`.
+
+**PROBLEMA CONOCIDO**: `spring-data-envers` registra `EnversRevisionRepositoryFactoryBean` automáticamente. Este factory intenta cargar entidades por su nombre JPA simple (ej: `"User"`) usando `ClassLoader.loadClass()`, lo que causa `ClassNotFoundException: User` al arrancar.
+
+**SOLUCIÓN**: Forzar el factory estándar en `VitaliaApplication.java`:
+
+```java
+@EnableJpaRepositories(
+    basePackages = "com.amachi.app",
+    repositoryFactoryBeanClass = JpaRepositoryFactoryBean.class  // ← fuerza factory estándar
+)
+```
+
+### 8.2 Usuarios de Desarrollo (perfil `dev`)
+
+El archivo cargado es `bootstrap-dev.yml`. Credenciales:
+
+| Rol | Email | Password | Header requerido |
 |---|---|---|---|
-| `id` | `Long` | `BaseEntity` | PK interna de BD. **Nunca** se expone al exterior ni se usa para filtrar. |
-| `code` | `String` | `Tenant.code` | **El identificador real del tenant** en todo el sistema. Se usa en JWT, headers HTTP, filtro Hibernate y bootstrap. Ej: `"hospital-san-borja"`. |
-| `tenantId` | `String` | `BaseTenantEntity` | Valor almacenado en la columna `TENANT_ID` de cada tabla de datos. Su valor **ES el `code`** del tenant dueño del dato. |
-
-> [!CAUTION]
-> **NUNCA** usar el `id` (Long) del Tenant para filtrar datos. El sistema opera 100% con el `code` (String).
-> El campo `TENANT_ID` en las tablas como `MED_APPOINTMENT` almacena el valor `"hospital-san-borja"`, NO el número `1`.
-
-#### Flujo completo de una petición HTTP (de extremo a extremo)
-
-```
-1. Bootstrap carga → code: "hospital-san-borja"  (desde application.yml)
-              ↓
-2. Frontend envía → Header X-Tenant-Code: "hospital-san-borja"
-              ↓
-3. MultiTenantFilter → TenantResolver.resolveTenant()  captura "hospital-san-borja"
-              ↓
-4. TenantContext.setTenant("hospital-san-borja")  (ThreadLocal, seguro por hilo)
-              ↓
-5. TenantFilterAspect (AOP) activa filtro Hibernate:
-   session.enableFilter("tenantFilter").setParameter("tenantId", "hospital-san-borja")
-              ↓
-6. Hibernate añade WHERE TENANT_ID = 'hospital-san-borja' a CADA query automáticamente
-              ↓
-7. BaseTenantEntity.@PrePersist → si tenantId == null → setTenantId(TenantContext.getTenant())
-   (el TENANT_ID del nuevo registro se inyecta automáticamente al crear)
-              ↓
-8. JWT contiene → claim tenantCode: "hospital-san-borja"  (via JwtUserDto.tenantCode)
-```
-
-#### Regla de Oro del DTO para entidades Tenant-Scoped
-
-Los DTOs de entidades que extienden `BaseTenantEntity` **NUNCA** deben incluir `tenantId`.
-El campo `TENANT_ID` es gestionado automáticamente por la infraestructura en ambas direcciones:
-- **Escritura**: `@PrePersist` en `BaseTenantEntity` lo inyecta desde `TenantContext`.
-- **Lectura**: `@IgnoreTenantAuditableFields` en el Mapper lo ignora explícitamente.
-- **Filtrado**: `TenantFilterAspect` lo aplica automáticamente en cada query.
-
-#### Modelo de Referencia: `AppointmentDto` (Template Oficial)
-
-El DTO de referencia para entidades Tenant-Scoped es `AppointmentDto`. Todo nuevo DTO debe seguir este patrón:
-- ✅ IDs de FK como `Long` (ej: `patientId`, `doctorId`) — nunca el objeto JPA completo.
-- ✅ Campos de solo lectura computados (ej: `patientFullName`, `doctorFullName`, `unitName`).
-- ✅ Campos operacionales que el cliente puede enviar (ej: `source`, `noShow`, `status`).
-- ✅ Campos de infraestructura read-only con `Schema.AccessMode.READ_ONLY` (ej: `lockedUntil`, `lockedBy`).
-- ❌ Sin `tenantId` — gestionado por infraestructura.
-- ❌ Sin `version` ni `externalId` en el DTO — gestionados por JPA/Hibernate automáticamente.
-- ❌ Sin `createdBy`, `createdDate`, `lastModifiedBy`, `lastModifiedDate` — campos de auditoría internos.
+| SuperAdmin | superadmin-dev@test.com | dev-password | `X-Tenant-Code: GLOBAL` |
+| TenantAdmin | admin-dev@test.com | dev-password | `X-Tenant-Code: hospital-san-borja` |
 
 ---
 
-## 3. 🛠️ Execution Strategy: Global Refactoring
-
-### Phase 1: Database Schema Alignment (Flyway)
-**Objective**: Standardize all medical tables to include the Elite Tier required audit and isolation columns.
-*   **New Migration**: `V5_20__upgrade_medical_schema_elite.sql`
-*   **Actions**:
-    *   Add `TENANT_ID` (VARCHAR 50) to all tables lacking it (e.g., `MED_APPOINTMENT`).
-    *   Add `EXTERNAL_ID` (VARCHAR 36) and `VERSION` (BIGINT) to support Idempotency and Optimistic Locking.
-    *   Add `deleted` (TINYINT) to support standardized Soft-Delete.
-
-### Phase 2: Entity & Service Refactoring (JPA Level)
-**Objective**: Rename Spanish entities to English and migrate logic to `BaseService`.
-*   **Naming Map**:
-    *   `ConsultaMedica` ➡️ `Consultation`
-    *   `TipoConsulta` ➡️ `ConsultationType`
-    *   `Hospitalizacion` ➡️ `Hospitalization`
-    *   `HabitoFisiologico` ➡️ `PhysiologicalHabit`
-    *   ... (and all related fields)
-*   **Infrastructure**:
-    *   All entities extend `BaseEntity` or `SoftDeletableEntity`.
-    *   All services extend `BaseService`.
-    *   All specifications extend `BaseSpecification`.
-
-### Phase 3: Integration & Cross-Module Messaging
-**Objective**: Register global handlers and publish events.
-*   Update `VitaliaApplication` with `@EnableJpaAuditing`.
-*   Implement `DomainEventPublisher` hooks in `vitalia-medical`.
-
----
-
-## 5. 🛡️ Advanced Enterprise Identity: The Hardened Elastic Pattern
-
-Vitalia implementa un modelo de identidad de 3 capas (Persona -> Tenant -> Rol) con un endurecimiento estricto diseñado para redes hospitalarias enterprise.
-
-### A. Capas de Identidad
-1. **Layer 1: Universal Identity (`Person`)**: Identidad global sin `TENANT_ID`. Nombre, NationalID y Bio-data pertenecen al humano.
-2. **Layer 2: Secure Membership (`PersonTenant`)**: Vincula a una `Person` con un `Tenant`. Controla el acceso y estado operativo.
-3. **Layer 3: Operative Roles (`Patient`, `Doctor`, `Nurse`, `Employee`)**: Entidades de dominio aisladas por `TENANT_ID`. **Contrato Obligatorio**: Deben implementar la interfaz `DomainRole` (`getPerson()`, `getTenantId()`).
-
-### B. Desacoplamiento UX vs Persistencia (Hardened Rule)
-Para evitar el acoplamiento UI ↔ Dominio, el sistema impone una separación total:
-- **`RoleContext` (UX/Security)**: Define la perspectiva y navegación del usuario (ej. "Entro como DOCTOR").
-- **`DomainContext` (Backend/Persistencia)**: Define la entidad física que se gestiona en la BD.
-- **Gobernanza**: El mapeo debe ser **centralizado** (ej. `ContextMapping`). Si no hay mapeo válido (ej. GUEST), no se crea entidad de dominio.
-
-### C. Protocolo de Resolución de Identidad
-1. **Búsqueda Estricta**: 1. `nationalId` ➔ 2. `email` ➔ 3. Creación. Esto evita la fragmentación de la identidad global.
-2. **Aceptación Atómica**: El proceso de `acceptInvitation` debe resolver la identidad y crear el contexto en una única unidad de trabajo atómica.
-
-### D. Seguridad de Integridad (Collision Handling)
-Dado que MySQL no admite índices parciales nativos para estados activos, el sistema implementa la validación **`existsActive`**:
-- **Regla**: Antes de crear un contexto (`DomainContext`), el servicio `PersonContextService` **DEBE** verificar si la persona ya posee ese rol activo en el tenant.
-- **Impacto**: Previene la duplicación de registros críticos (ej. dos registros de Doctor para la misma persona) y garantiza la integridad del EHR.
-
-### E. Aislamiento de Gobernanza
-Los roles de **SuperAdmin** y **TenantAdmin** operan exclusivamente a nivel de plataforma y seguridad, sin contaminar el modelo clínico o operativo.
-
----
-
-## 6. 🛡️ Resilience & Soft-Delete Protocol
-
-All Elite Tier entities MUST provide data safety through logical deletion.
-
-- **Interface**: `SoftDeletable`.
-- **Implementation**:
-    - Field: `isDeleted` (mapped to `IS_DELETED` TINYINT in SQL).
-    - Method: `delete()` sets `isDeleted = true`.
-- **Constraint Handling**: Unique constraints must ideally include the `IS_DELETED` column to allow re-creation of previously deleted business keys.
-
----
-
----
-
-## 4. ⚠️ Risk Management: DDL Regressions
-To fulfill the user's requirement of **"Zero regressions in DDL"**:
-1.  **Table Names Stable**: JPA entities will be renamed (e.g., `@Entity(name="Consultation")`), but `@Table(name="MED_PATIENT_VISIT")` will remain consistent with existing DB structure.
-2.  **Additive Migrations**: We will ONLY use additive SQL (ALTER TABLE) in Flyway version `V5_20` or higher. We will NOT modify existing `V1-V9` files.
-3.  **Mapping Consistency**: We will use `@Column(name="NOMBRE_FIELD")` to map English properties to existing Spanish columns where necessary, maintaining database compatibility while achieving code purity.
-
----
-
-## 📅 Next Step: DDL Infrastructure Upgrade (Core-Domain)
-Synchronize the physical schema with the refactored entities.
-1. Add columns for Soft-Delete and Audit consistency to `DMN_THEME` and `DMN_HOSPITAL`.
-2. Transition `DMN_PERSON` to its Global (Shared) status.
-
+*Last update: 2026-05-05 - AMA-026: SaaS Elite elevation, startup fixes, mapper patterns, tenant flow.*

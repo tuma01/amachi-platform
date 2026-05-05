@@ -1,7 +1,7 @@
 package com.amachi.app.core.domain.repository;
 
 import com.amachi.app.core.common.enums.RoleContext;
-import com.amachi.app.core.common.repository.CommonRepository;
+import com.amachi.app.core.common.repository.TenantCommonRepository;
 import com.amachi.app.core.domain.entity.Person;
 import com.amachi.app.core.domain.entity.PersonTenant;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
@@ -17,7 +17,7 @@ import java.util.Optional;
 
 @Repository
 public interface PersonTenantRepository
-        extends CommonRepository<PersonTenant, Long> {
+        extends TenantCommonRepository<PersonTenant, Long> {
     Page<PersonTenant> findByTenantId(Long tenantId, Pageable pageable);
 
     Optional<PersonTenant> findByPersonIdAndTenantId(Long personId, Long tenantId);

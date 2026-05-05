@@ -35,21 +35,13 @@ public class MedicalProcedureSpecification extends BaseSpecification<MedicalProc
                     "%" + criteria.getCode().toLowerCase() + "%"));
         }
 
-        // Filtrar por nombre del procedimiento (LIKE)
-        if (criteria.getName() != null && !criteria.getName().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("name")), 
-                    "%" + criteria.getName().toLowerCase() + "%"));
-        }
-
-        // Filtrar por tipo (exacto)
-        if (criteria.getType() != null && !criteria.getType().isBlank()) {
-            predicates.add(cb.equal(cb.lower(root.get("type")), 
-                    criteria.getType().toLowerCase()));
-        }
-
-        // Filtrar por estado activo/inactivo
-        if (criteria.getActive() != null) {
-            predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+        // Filtrar por búsqueda global (Query) en código o nombre
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            String q = "%" + criteria.getQuery().toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("code")), q),
+                cb.like(cb.lower(root.get("name")), q)
+            ));
         }
 
         return cb.and(predicates.toArray(new Predicate[0]));

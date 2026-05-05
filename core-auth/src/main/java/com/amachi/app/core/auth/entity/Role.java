@@ -1,11 +1,12 @@
 package com.amachi.app.core.auth.entity;
 
-import com.amachi.app.core.common.entity.BaseTenantEntity;
+import com.amachi.app.core.common.entity.Auditable;
 import com.amachi.app.core.common.entity.Model;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.*;
 import lombok.experimental.SuperBuilder;
+import lombok.*;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -18,14 +19,31 @@ import java.util.Set;
 @Table(name = "AUT_ROLE", uniqueConstraints = {
     @UniqueConstraint(name = "UK_ROLE_NAME", columnNames = {"NAME"})
 })
-@Getter @Setter
+@Getter
+@SuperBuilder @Setter
 @NoArgsConstructor @AllArgsConstructor
-@SuperBuilder
-@Schema(description = "Security roles define system-wide or tenant-specific permissions")
-public class Role extends BaseTenantEntity implements Model {
 
-    @NotBlank(message = "Role name {err.required}")
-    @Column(name = "NAME", nullable = false, length = 50, unique = true)
+@Schema(description = "Security roles define system-wide or tenant-specific permissions")
+public class Role extends Auditable<String> implements Model {
+
+    @Column(name = "IS_DELETED", nullable = false)
+    @Builder.Default
+    private boolean deleted = false;
+
+    /**
+     * SCHEMA COMPATIBILITY FIELDS
+     * Logically global, physically scoped in legacy DB.
+     */
+    @Column(name = "TENANT_ID", nullable = false)
+    @Builder.Default
+    private Long tenantId = 0L;
+
+    @Column(name = "TENANT_CODE", nullable = false, length = 50)
+    @Builder.Default
+    private String tenantCode = "GLOBAL";
+
+    @NotBlank(message = "Role name cannot be empty")
+    @Column(name = "NAME", nullable = false, length = 50)
     private String name;
 
     @Column(name = "DESCRIPTION", length = 200)
@@ -33,9 +51,9 @@ public class Role extends BaseTenantEntity implements Model {
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
-        name = "AUT_ROLE_PERMISSION_MAP",
-        joinColumns = @JoinColumn(name = "ROLE_ID", referencedColumnName = "ID"),
-        inverseJoinColumns = @JoinColumn(name = "PERMISSION_ID", referencedColumnName = "ID")
+        name = "AUT_ROLE_PERMISSION",
+        joinColumns = @JoinColumn(name = "FK_ID_ROLE", referencedColumnName = "ID"),
+        inverseJoinColumns = @JoinColumn(name = "FK_ID_PERMISSION", referencedColumnName = "ID")
     )
     @Builder.Default
     private Set<Permission> permissions = new HashSet<>();
@@ -58,9 +76,6 @@ public class Role extends BaseTenantEntity implements Model {
     private void normalizeRole() {
         if (this.name != null) {
             this.name = this.name.toUpperCase().trim();
-        }
-        if (getTenantId() == null) {
-            setTenantId("SYSTEM");
         }
     }
 

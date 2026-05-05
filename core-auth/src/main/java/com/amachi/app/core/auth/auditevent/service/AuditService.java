@@ -8,6 +8,7 @@ public interface AuditService {
             AuditEventType type,
             Long userId,
             Long tenantId,
+            String tenantCode,
             String message
     );
 
@@ -15,6 +16,7 @@ public interface AuditService {
             AuditEventType type,
             Long userId,
             Long tenantId,
+            String tenantCode,
             String message,
             String ip
     );

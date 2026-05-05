@@ -2,7 +2,6 @@ package com.amachi.app.core.common.error;
 
 import lombok.Getter;
 
-@Getter
 public enum ErrorCode {
 
     // --- VALIDATION ERRORS ---
@@ -43,7 +42,8 @@ public enum ErrorCode {
     SEC_USER_DISABLED("SEC_011", "User account is disabled"),
     SEC_USER_LOCKED("SEC_012", "User account is locked"),
     SEC_INVALID_CREDENTIALS("SEC_013", "Invalid username or password"),
-    SEC_TENANT_DISABLED("SEC_014", "Tenant account is disabled");
+    SEC_TENANT_DISABLED("SEC_014", "Tenant account is disabled"),
+    SEC_INVALID_TENANT("SEC_015", "Invalid tenant name");
 
     private final String code;
     private final String description;
@@ -51,5 +51,13 @@ public enum ErrorCode {
     ErrorCode(String code, String description) {
         this.code = code;
         this.description = description;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public String getDescription() {
+        return description;
     }
 }

@@ -2,9 +2,12 @@ package com.amachi.app.core.common.entity;
 
 /**
  * Contrato Técnico SaaS - Amachi Platform Docs.
- * Fixed: Restoring String return type for tenantId compatibility.
+ * SaaS Elite Tier: Distinguishing between numeric ID and alphanumeric Code.
  */
 public interface TenantScoped {
-    String getTenantId();
-    void setTenantId(String tenantId);
+    String getTenantCode();
+    void setTenantCode(String tenantCode);
+
+    Long getTenantId();
+    void setTenantId(Long tenantId);
 }

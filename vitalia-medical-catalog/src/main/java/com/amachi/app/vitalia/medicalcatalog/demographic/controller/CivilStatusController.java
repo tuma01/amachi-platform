@@ -37,17 +37,14 @@ public class CivilStatusController extends BaseController implements CivilStatus
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<CivilStatusDto> createCivilStatus(@Valid @RequestBody @NonNull CivilStatusDto dto) {
-        CivilStatus entity = mapper.toEntity(dto);
-        CivilStatus savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        CivilStatus savedEntity = service.create(dto);
+        return  ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<CivilStatusDto> updateCivilStatus(@NonNull Long id, @Valid @RequestBody @NonNull CivilStatusDto dto) {
-        CivilStatus existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        CivilStatus savedEntity = service.update(id, existing);
+        CivilStatus savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

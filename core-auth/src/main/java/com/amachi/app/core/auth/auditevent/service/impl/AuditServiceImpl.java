@@ -19,19 +19,20 @@ public class AuditServiceImpl implements AuditService {
     private final AuditEventRepository auditEventRepository;
 
     @Override
-    @Transactional
     public void registerEvent(AuditEventType type,
                               Long userId,
                               Long tenantId,
+                              String tenantCode,
                               String message) {
-        registerEvent(type, userId, tenantId, message, null);
+        registerEvent(type, userId, tenantId, tenantCode, message, null);
     }
 
     @Override
-    @Transactional
+    @org.springframework.transaction.annotation.Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void registerEvent(AuditEventType type,
                               Long userId,
                               Long tenantId,
+                              String tenantCode,
                               String message,
                               String ipAddress) {
 
@@ -40,16 +41,16 @@ public class AuditServiceImpl implements AuditService {
                     .eventType(type)
                     .userId(userId)
                     .tenantId(tenantId)
+                    .tenantCode(tenantCode)
                     .message(message)
-                    .timestamp(LocalDateTime.now())
                     .ipAddress(ipAddress)
                     .build();
 
-            auditEventRepository.save(event);
+            auditEventRepository.saveAndFlush(event);
 
         } catch (Exception ex) {
-            // No romper el flujo de autenticación jamás por auditoría
-            log.warn("⚠️ Error registrando auditoría: {}", ex.getMessage());
+            // No romper el flujo de negocio jamás por auditoría
+            log.error("❌ [CRITICAL] Error persistiendo auditoría (Fail-Safe activado): {}", ex.getMessage());
         }
     }
 }

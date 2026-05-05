@@ -34,9 +34,9 @@ public class BloodType extends Auditable<String> implements Model {
     @Column(name = "NAME", nullable = false, length = 50)
     private String name; // e.g., A Positivo, O Negativo
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

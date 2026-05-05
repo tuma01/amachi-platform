@@ -1,10 +1,10 @@
 package com.amachi.app.core.auth.service;
 
+import com.amachi.app.core.auth.dto.UserTenantRoleDto;
 import com.amachi.app.core.auth.dto.search.UserTenantRoleSearchDto;
 import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.entity.User;
 import com.amachi.app.core.auth.entity.UserTenantRole;
-import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.common.service.GenericService;
 
 import java.util.List;
@@ -12,7 +12,7 @@ import java.util.Set;
 
 // TODO para borrar cuando se migre todo a UserTenantRoleServiceImpl
 public interface UserTenantRoleService extends
-        GenericService<UserTenantRole, UserTenantRoleSearchDto> {
+        GenericService<UserTenantRole, UserTenantRoleDto, UserTenantRoleSearchDto> {
     // void assignRolesToUser(Long userTenantId, List<String> roles);
 
     void assignRolesToUserAndTenant(Long userId, Long tenantId, List<String> roleNames);
@@ -22,7 +22,7 @@ public interface UserTenantRoleService extends
      * UserTenantRole.
      * Evita duplicados y devuelve la lista creada.
      */
-    Set<UserTenantRole> assignRolesToUserAndTenant(User user, Tenant tenant, Set<Role> roles);
+    Set<UserTenantRole> assignRolesToUserAndTenant(User user, Long tenantId, Set<Role> roles);
 
     Set<String> findRoleNamesByUserAndTenant(Long userId, Long tenantId);
 

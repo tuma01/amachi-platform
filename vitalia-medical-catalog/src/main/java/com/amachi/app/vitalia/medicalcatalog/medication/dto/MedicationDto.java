@@ -57,6 +57,10 @@ public class MedicationDto implements Serializable {
     @Schema(description = "Package presentation", example = "BOX X 30 TABLETS")
     private String presentation;
 
+    @JsonProperty("description")
+    @Schema(description = "Pharmacological or therapeutic description", example = "Used to treat mild to moderate pain")
+    private String description;
+
     @JsonProperty("active")
     @Schema(description = "Status record", example = "true")
     private Boolean active;

@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-@Getter
-@Builder
 public class ErrorDetail {
 
     private final ErrorCategory category;
@@ -20,6 +18,54 @@ public class ErrorDetail {
     private final Map<String, Object> details;
     private final String timestamp;
     private final String traceId;
+
+    private ErrorDetail(ErrorCategory category, String code, String userMessage, String developerMessage, String field, Map<String, Object> details, String timestamp, String traceId) {
+        this.category = category;
+        this.code = code;
+        this.userMessage = userMessage;
+        this.developerMessage = developerMessage;
+        this.field = field;
+        this.details = details;
+        this.timestamp = timestamp;
+        this.traceId = traceId;
+    }
+
+    public ErrorCategory getCategory() { return category; }
+    public String getCode() { return code; }
+    public String getUserMessage() { return userMessage; }
+    public String getDeveloperMessage() { return developerMessage; }
+    public String getField() { return field; }
+    public Map<String, Object> getDetails() { return details; }
+    public String getTimestamp() { return timestamp; }
+    public String getTraceId() { return traceId; }
+
+    public static ErrorDetailBuilder builder() {
+        return new ErrorDetailBuilder();
+    }
+
+    public static class ErrorDetailBuilder {
+        private ErrorCategory category;
+        private String code;
+        private String userMessage;
+        private String developerMessage;
+        private String field;
+        private Map<String, Object> details;
+        private String timestamp;
+        private String traceId;
+
+        public ErrorDetailBuilder category(ErrorCategory category) { this.category = category; return this; }
+        public ErrorDetailBuilder code(String code) { this.code = code; return this; }
+        public ErrorDetailBuilder userMessage(String userMessage) { this.userMessage = userMessage; return this; }
+        public ErrorDetailBuilder developerMessage(String developerMessage) { this.developerMessage = developerMessage; return this; }
+        public ErrorDetailBuilder field(String field) { this.field = field; return this; }
+        public ErrorDetailBuilder details(Map<String, Object> details) { this.details = details; return this; }
+        public ErrorDetailBuilder timestamp(String timestamp) { this.timestamp = timestamp; return this; }
+        public ErrorDetailBuilder traceId(String traceId) { this.traceId = traceId; return this; }
+
+        public ErrorDetail build() {
+            return new ErrorDetail(category, code, userMessage, developerMessage, field, details, timestamp, traceId);
+        }
+    }
 
     /**
      * Construcción genérica simple usada en ApiResponse.error(...)

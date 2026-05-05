@@ -29,21 +29,13 @@ public class Icd10Specification extends BaseSpecification<Icd10> {
             predicates.add(cb.equal(root.get("id"), criteria.getId()));
         }
 
-        // Filtrar por código CIE-10 (LIKE)
-        if (criteria.getCode() != null && !criteria.getCode().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("code")), 
-                    "%" + criteria.getCode().toLowerCase() + "%"));
-        }
-
-        // Filtrar por descripción del diagnóstico (LIKE)
-        if (criteria.getDescription() != null && !criteria.getDescription().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("description")), 
-                    "%" + criteria.getDescription().toLowerCase() + "%"));
-        }
-
-        // Filtrar por estado activo/inactivo
-        if (criteria.getActive() != null) {
-            predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+        // Filtrar por búsqueda global (Query) en código o descripción
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            String q = "%" + criteria.getQuery().toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("code")), q),
+                cb.like(cb.lower(root.get("description")), q)
+            ));
         }
 
         return cb.and(predicates.toArray(new Predicate[0]));

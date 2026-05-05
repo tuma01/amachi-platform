@@ -4,9 +4,9 @@
     "type": "HOSPITAL",
     "description": "Main test hospital",
     "address": {
-        "numero": "123",
-        "direccion": "Main St",
-        "ciudad": "Central City",
+        "streetNumber": "123",
+        "streetName": "Main St",
+        "city": "Central City",
         "countryId": 1,
         "stateId": 2
     }

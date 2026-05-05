@@ -35,16 +35,13 @@ public class AddressController extends BaseController implements AddressApi {
 
     @Override
     public ResponseEntity<AddressDto> createAddress(@Valid @RequestBody @NonNull AddressDto dto) {
-        Address entity = mapper.toEntity(dto);
-        Address savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Address savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     public ResponseEntity<AddressDto> updateAddress(@NonNull Long id, @Valid @RequestBody @NonNull AddressDto dto) {
-        Address existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        Address updatedEntity = service.update(id, existingEntity);
+        Address updatedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 

@@ -29,27 +29,14 @@ public class HealthcareProviderSpecification extends BaseSpecification<Healthcar
             predicates.add(cb.equal(root.get("id"), criteria.getId()));
         }
 
-        // Filtrar por código (LIKE)
-        if (criteria.getCode() != null && !criteria.getCode().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("code")), 
-                    "%" + criteria.getCode().toLowerCase() + "%"));
-        }
-
-        // Filtrar por nombre (LIKE)
-        if (criteria.getName() != null && !criteria.getName().isBlank()) {
-            predicates.add(cb.like(cb.lower(root.get("name")), 
-                    "%" + criteria.getName().toLowerCase() + "%"));
-        }
-
-        // Filtrar por NIT/RUT exacto
-        if (criteria.getTaxId() != null && !criteria.getTaxId().isBlank()) {
-            predicates.add(cb.equal(cb.lower(root.get("taxId")), 
-                    criteria.getTaxId().toLowerCase()));
-        }
-
-        // Filtrar por estado activo/inactivo
-        if (criteria.getActive() != null) {
-            predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+        // Filtrar por búsqueda global (Query) en código, nombre o taxId
+        if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+            String q = "%" + criteria.getQuery().toLowerCase() + "%";
+            predicates.add(cb.or(
+                cb.like(cb.lower(root.get("code")), q),
+                cb.like(cb.lower(root.get("name")), q),
+                cb.like(cb.lower(root.get("taxId")), q)
+            ));
         }
 
         return cb.and(predicates.toArray(new Predicate[0]));

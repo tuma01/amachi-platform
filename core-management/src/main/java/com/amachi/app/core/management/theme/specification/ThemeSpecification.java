@@ -36,7 +36,7 @@ public class ThemeSpecification implements Specification<Theme> {
         }
 
         // Only templates should be visible/manageable in the general themes list
-        predicates.add(cb.isTrue(root.get("isTemplate")));
+        predicates.add(cb.isTrue(root.get("template")));
 
         return cb.and(predicates.toArray(new Predicate[0]));
     }
