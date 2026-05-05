@@ -1,7 +1,6 @@
 package com.amachi.app.vitalia.boot.handler;
 
 import com.amachi.app.core.auth.exception.*;
-import com.amachi.app.vitalia.medical.avatar.exception.InvalidAvatarException;
 import com.amachi.app.core.common.api.ApiResponse;
 import com.amachi.app.core.common.error.ErrorCode;
 import com.amachi.app.core.common.error.ErrorDetail;
@@ -10,6 +9,7 @@ import com.amachi.app.core.common.i18n.Translator;
 import com.amachi.app.core.common.exception.BadRequestException;
 import com.amachi.app.core.common.exception.BusinessException;
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
+import com.amachi.app.core.common.exception.InvalidAvatarException;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -91,11 +91,22 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return buildErrorResponseObject(HttpStatusCode.BAD_REQUEST, errorDetail, request);
     }
 
-    private ResponseEntity<Object> buildErrorResponseObject(HttpStatusCode status, ErrorDetail detail,
+    private ResponseEntity<Object> buildErrorResponseObject(
+            HttpStatusCode status,
+            ErrorDetail detail,
             WebRequest request) {
-        String path = request.getDescription(false).replace("uri=", "");
-        return ResponseEntity.status(status.getCode())
-                .body(ApiResponse.error(status, detail, path));
+
+        HttpStatusCode safeStatus = (status != null)
+                ? status
+                : HttpStatusCode.INTERNAL_SERVER_ERROR;
+
+        String path = (request != null)
+                ? request.getDescription(false).replace("uri=", "")
+                : "N/A";
+
+        return ResponseEntity
+                .status(HttpStatusMapper.toSpringStatus(safeStatus))
+                .body(ApiResponse.error(safeStatus, detail, path));
     }
 
     // =====================================
@@ -109,7 +120,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 "entity", ex.getEntityName());
         ErrorDetail detail = ErrorDetail.from(
                 ErrorCode.BUS_RESOURCE_NOT_FOUND,
-                Translator.toLocale(ex.getKey(), ex.getArgs()),
+                Translator.toLocale(ex.getMessage(), ex.getArgs()),
                 null,
                 details);
         // 🔹 construimos primero el response manualmente
@@ -128,7 +139,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(BadRequestException ex, HttpServletRequest request) {
         ErrorDetail detail = ErrorDetail.from(
                 ErrorCode.VAL_INVALID_FORMAT,
-                Translator.toLocale(ex.getKey(), ex.getArgs()),
+                Translator.toLocale(ex.getMessage(), ex.getArgs()),
                 ex.getField(),
                 Map.of("info", ex.getMessage()));
         return buildErrorResponse(HttpStatusCode.BAD_REQUEST, detail, request);
@@ -166,7 +177,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpServletRequest request) {
         ErrorDetail detail = ErrorDetail.from(
                 ErrorCode.VALIDATION_ERROR,
-                Translator.toLocale(ex.getKey(), ex.getArgs()),
+                Translator.toLocale(ex.getMessage(), ex.getArgs()),
                 ex.getEntityName(),
                 Map.of("info", ex.getMessage()));
         return buildErrorResponse(HttpStatusCode.BAD_REQUEST, detail, request);
@@ -217,7 +228,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpServletRequest request) {
         ErrorDetail detail = ErrorDetail.from(
                 ex.getErrorCode(),
-                Translator.toLocale(ex.getKey(), ex.getArgs()),
+                Translator.toLocale(ex.getMessage(), ex.getArgs()),
                 null,
                 Map.of("info", ex.getMessage()));
         return buildErrorResponse(HttpStatusCode.BAD_REQUEST, detail, request);

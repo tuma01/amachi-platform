@@ -35,17 +35,14 @@ public class IdentificationTypeController extends BaseController implements Iden
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<IdentificationTypeDto> createIdentificationType(@Valid @RequestBody @NonNull IdentificationTypeDto dto) {
-        IdentificationType entity = mapper.toEntity(dto);
-        IdentificationType savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        IdentificationType savedEntity = service.create(dto);
+        return  ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<IdentificationTypeDto> updateIdentificationType(@NonNull Long id, @Valid @RequestBody @NonNull IdentificationTypeDto dto) {
-        IdentificationType existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        IdentificationType savedEntity = service.update(id, existing);
+        IdentificationType savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface CivilStatusMapper extends EntityDtoMapper<CivilStatus, CivilStatusDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     CivilStatus toEntity(CivilStatusDto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(CivilStatusDto dto, @MappingTarget CivilStatus entity);
 

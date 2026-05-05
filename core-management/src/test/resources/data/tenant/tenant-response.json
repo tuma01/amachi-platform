@@ -3,14 +3,14 @@
     "code": "TENANT001",
     "name": "General Hospital",
     "type": "HOSPITAL",
-    "isActive": true,
+    "active": true,
     "description": "Main test hospital",
     "themeId": null,
     "address": {
         "id": 100,
-        "numero": "123",
-        "direccion": "Main St",
-        "ciudad": "Central City",
+        "streetNumber": "123",
+        "streetName": "Main St",
+        "city": "Central City",
         "countryId": 1,
         "stateId": 2
     }

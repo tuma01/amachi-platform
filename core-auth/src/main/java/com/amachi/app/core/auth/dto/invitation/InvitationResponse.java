@@ -41,12 +41,6 @@ public class InvitationResponse {
     private String roleName;
 
     /**
-     * Tenant/hospital code this invitation belongs to.
-     */
-    @Schema(description = "Code of the target tenant.", example = "hospital-san-borja")
-    private String tenantCode;
-
-    /**
      * Human-readable name of the tenant for display purposes.
      */
     @Schema(description = "Name of the target hospital/clinic.", example = "Hospital San Borja")

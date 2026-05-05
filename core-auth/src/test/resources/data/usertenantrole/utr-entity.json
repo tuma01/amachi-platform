@@ -5,12 +5,8 @@
         "email": "user@vitalia.com",
         "enabled": true
     },
-    "tenant": {
-        "id": 1,
-        "code": "TEN-001",
-        "name": "Hospital Central",
-        "isActive": true
-    },
+    "tenantId": 1,
+    "tenantCode": "TEST",
     "role": {
         "id": 1,
         "name": "ROLE_ADMIN",

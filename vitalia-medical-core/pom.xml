@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.amachi.app.platform</groupId>
+        <artifactId>amachi-platform</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <groupId>com.amachi.app.vitalia</groupId>
+    <artifactId>vitalia-medical-core</artifactId>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <!-- Core Common -->
+        <dependency>
+            <groupId>com.amachi.app.platform</groupId>
+            <artifactId>core-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Core Domain -->
+        <dependency>
+            <groupId>com.amachi.app.platform</groupId>
+            <artifactId>core-domain</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Core Auth (Security & User Context) -->
+        <dependency>
+            <groupId>com.amachi.app.platform</groupId>
+            <artifactId>core-auth</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Medical Catalog -->
+        <dependency>
+            <groupId>com.amachi.app.platform</groupId>
+            <artifactId>vitalia-medical-catalog</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- MapStruct -->
+<!--        <dependency>-->
+<!--            <groupId>org.mapstruct</groupId>-->
+<!--            <artifactId>mapstruct</artifactId>-->
+<!--        </dependency>-->
+
+        <!-- Envers (Audit) -->
+<!--        <dependency>-->
+<!--            <groupId>org.hibernate.orm</groupId>-->
+<!--            <artifactId>hibernate-envers</artifactId>-->
+<!--        </dependency>-->
+
+        <!-- Testing -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>jakarta.persistence</groupId>
+            <artifactId>jakarta.persistence-api</artifactId>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+        <finalName>${project.artifactId}-${project.version}</finalName>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

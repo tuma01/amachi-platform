@@ -14,7 +14,7 @@ public class TenantCreatedEvent extends DomainEvent {
     private final String name;
 
     public TenantCreatedEvent(Long createdTenantId, String code, String name) {
-        super(java.time.LocalDateTime.now(), "SYSTEM");
+        super();
         this.createdTenantId = createdTenantId;
         this.code = code;
         this.name = name;

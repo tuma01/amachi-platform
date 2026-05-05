@@ -4,7 +4,7 @@ import com.amachi.app.core.auth.entity.User;
 import com.amachi.app.core.auth.entity.UserAccount;
 import com.amachi.app.core.domain.entity.Person;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
-import com.amachi.app.core.common.repository.CommonRepository;
+import com.amachi.app.core.common.repository.TenantCommonRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -20,7 +20,7 @@ import java.util.Set;
  * Ubicado en amachi-platform.
  */
 @Repository
-public interface UserAccountRepository extends CommonRepository<UserAccount, Long> {
+public interface UserAccountRepository extends TenantCommonRepository<UserAccount, Long> {
 
     /**
      * Busca una UserAccount por el email del usuario y el código del tenant.

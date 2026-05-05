@@ -37,17 +37,14 @@ public class MedicationController extends BaseController implements MedicationAp
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<MedicationDto> createMedication(@Valid @RequestBody @NonNull MedicationDto dto) {
-        Medication entity = mapper.toEntity(dto);
-        Medication savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Medication savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<MedicationDto> updateMedication(@NonNull Long id, @Valid @RequestBody @NonNull MedicationDto dto) {
-        Medication existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        Medication savedEntity = service.update(id, existing);
+        Medication savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

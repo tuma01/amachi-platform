@@ -11,11 +11,11 @@ import org.mapstruct.*;
 public interface StateMapper extends EntityDtoMapper<State, StateDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @Mapping(target = "country.id", source = "countryId")
     State toEntity(StateDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", source = "id", ignore = true)
     @Mapping(target = "country.id", source = "countryId")

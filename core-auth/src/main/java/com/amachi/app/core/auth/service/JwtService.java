@@ -26,7 +26,7 @@ public interface JwtService {
     /**
      * Valida un token JWT
      */
-    boolean validateToken(String token);
+    void validateToken(String token);
 
     /**
      * Extrae JwtUserDto del token (para tokens de acceso)

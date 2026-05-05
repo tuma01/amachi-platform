@@ -30,7 +30,7 @@ public class TenantDto {
 
     @Schema(description = "Indicates if the Tenant is active", example = "true")
     @Builder.Default
-    private Boolean isActive = true;
+    private Boolean active = true;
 
     @Schema(description = "Description of the Tenant", example = "This is the main hospital tenant.")
     private String description;

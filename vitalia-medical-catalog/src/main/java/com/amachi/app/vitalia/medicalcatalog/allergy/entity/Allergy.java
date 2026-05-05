@@ -1,12 +1,13 @@
 package com.amachi.app.vitalia.medicalcatalog.allergy.entity;
 
-import com.amachi.app.core.common.entity.Auditable;
-import com.amachi.app.core.common.entity.Model;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
+import com.amachi.app.core.common.entity.Auditable;
+import com.amachi.app.core.common.entity.Model;
 
 /**
  * Entidad Allergy (SaaS Elite Tier).
@@ -17,7 +18,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
@@ -28,10 +28,8 @@ import lombok.experimental.SuperBuilder;
 )
 public class Allergy extends Auditable<String> implements Model {
 
-
-
     @NotBlank(message = "Code {err.mandatory}")
-    @Column(name = "CODE", nullable = false, length = 20)
+    @Column(name = "CODE", nullable = false, length = 50)
     private String code;
 
     @NotBlank(message = "Name {err.mandatory}")
@@ -42,16 +40,16 @@ public class Allergy extends Auditable<String> implements Model {
     @Column(name = "TYPE", nullable = false, length = 50)
     private String type; // e.g., DRUG, FOOD, ENVIRONMENTAL
 
-    @Column(name = "DESCRIPTION", length = 250)
+    @Column(name = "DESCRIPTION", columnDefinition = "TEXT")
     private String description;
 
     @Column(name = "CRITICALITY", length = 50)
     @Schema(description = "Nivel de severidad o criticidad esperada (ALTA, MEDIA, BAJA)", example = "ALTA")
-    private String severity;
+    private String criticality;
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

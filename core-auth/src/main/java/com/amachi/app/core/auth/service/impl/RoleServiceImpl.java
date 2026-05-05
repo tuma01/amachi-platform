@@ -1,5 +1,6 @@
 package com.amachi.app.core.auth.service.impl;
 
+import com.amachi.app.core.auth.dto.RoleDto;
 import com.amachi.app.core.auth.dto.search.RoleSearchDto;
 import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.event.RoleCreatedEvent;
@@ -21,7 +22,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class RoleServiceImpl extends BaseService<Role, RoleSearchDto> implements RoleService {
+public class RoleServiceImpl extends BaseService<Role, RoleDto, RoleSearchDto> implements RoleService {
 
     private final RoleRepository repository;
     private final DomainEventPublisher eventPublisher;
@@ -51,6 +52,20 @@ public class RoleServiceImpl extends BaseService<Role, RoleSearchDto> implements
         // Roles are global catalogs; an update event is not required in the current
         // event-driven flow. Method must be implemented to satisfy BaseService contract.
         log.debug("Role updated: id={}, name={}", entity.getId(), entity.getName());
+    }
+
+    @Override
+    protected Role mapToEntity(RoleDto dto) {
+        return Role.builder()
+                .name(dto.getName())
+                .description(dto.getDescription())
+                .build();
+    }
+
+    @Override
+    protected void mergeEntities(RoleDto dto, Role existing) {
+        existing.setName(dto.getName());
+        existing.setDescription(dto.getDescription());
     }
 
     @Override

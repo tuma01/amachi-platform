@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface Icd10Mapper extends EntityDtoMapper<Icd10, Icd10Dto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     Icd10 toEntity(Icd10Dto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(Icd10Dto dto, @MappingTarget Icd10 entity);
 

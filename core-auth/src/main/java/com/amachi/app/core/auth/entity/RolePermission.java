@@ -23,10 +23,10 @@ public class RolePermission extends BaseEntity implements Model {
     // ID heredado de BaseEntity
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "ROLE_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_ROLE_PERMISSION_ROLE"))
+    @JoinColumn(name = "FK_ID_ROLE", nullable = false, foreignKey = @ForeignKey(name = "FK_ROLE_PERMISSION_ROLE"))
     private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "PERMISSION_ID", nullable = false, foreignKey = @ForeignKey(name = "FK_ROLE_PERMISSION_PERMISSION"))
+    @JoinColumn(name = "FK_ID_PERMISSION", nullable = false, foreignKey = @ForeignKey(name = "FK_ROLE_PERMISSION_PERMISSION"))
     private Permission permission;
 }

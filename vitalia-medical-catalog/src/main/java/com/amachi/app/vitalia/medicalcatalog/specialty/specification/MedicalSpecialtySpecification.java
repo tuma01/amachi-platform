@@ -30,11 +30,8 @@ public class MedicalSpecialtySpecification implements Specification<MedicalSpeci
             if (criteria.getCode() != null && !criteria.getCode().isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("code")), "%" + criteria.getCode().toLowerCase() + "%"));
             }
-            if (criteria.getName() != null && !criteria.getName().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("name")), "%" + criteria.getName().toLowerCase() + "%"));
-            }
-            if (criteria.getActive() != null) {
-                predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+            if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + criteria.getQuery().toLowerCase() + "%"));
             }
         }
 

@@ -33,11 +33,6 @@ public class UserTenantRoleSpecification implements Specification<UserTenantRole
             predicates.add(cb.like(cb.lower(root.get("user").get("email")), "%" + criteria.getUser().getEmail().toLowerCase() + "%"));
         }
 
-        // Filtro por código ISO del país
-        if (criteria.getTenantId() != null) {
-            predicates.add(cb.equal(root.get("tenantId"), criteria.getTenantId()));
-        }
-
         if (criteria.getAssignedAt() != null) {
             predicates.add(cb.equal(root.get("assignedAt"), criteria.getAssignedAt()));
         }

@@ -6,6 +6,7 @@ import com.amachi.app.core.auth.dto.search.UserTenantRoleSearchDto;
 import com.amachi.app.core.auth.entity.UserTenantRole;
 import com.amachi.app.core.auth.mapper.UserTenantRoleMapper;
 import com.amachi.app.core.auth.service.UserTenantRoleService;
+import com.amachi.app.core.common.context.TenantContext;
 import com.amachi.app.core.common.controller.BaseController;
 import com.amachi.app.core.common.dto.PageResponseDto;
 import jakarta.validation.Valid;
@@ -40,16 +41,13 @@ public class UserTenantRoleController extends BaseController implements UserTena
 
     @Override
     public ResponseEntity<UserTenantRoleDto> createUserTenantRole(UserTenantRoleDto dto) {
-        UserTenantRole entity = mapper.toEntity(dto);
-        UserTenantRole savedEntity = service.create(entity);
+        UserTenantRole savedEntity = service.create(dto);
         return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
     }
 
     @Override
     public ResponseEntity<UserTenantRoleDto> updateUserTenantRole(Long id, UserTenantRoleDto dto) {
-        UserTenantRole existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        UserTenantRole updatedEntity = service.update(id, existingEntity);
+        UserTenantRole updatedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 
@@ -94,13 +92,13 @@ public class UserTenantRoleController extends BaseController implements UserTena
 
     @Override
     public ResponseEntity<Void> assignRoles(@Valid @RequestBody AssignRolesRequest request) {
-        service.assignRolesToUserAndTenant(request.getUserId(), request.getTenantId(), request.getRoleNames());
+        service.assignRolesToUserAndTenant(request.getUserId(), TenantContext.getTenantId(), request.getRoleNames());
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
     @Override
     public ResponseEntity<Void> unassignRoles(@Valid @RequestBody AssignRolesRequest request) {
-        service.unassignRolesFromUserAndTenant(request.getUserId(), request.getTenantId(), request.getRoleNames());
+        service.unassignRolesFromUserAndTenant(request.getUserId(), TenantContext.getTenantId(), request.getRoleNames());
         return ResponseEntity.noContent().build();
     }
 

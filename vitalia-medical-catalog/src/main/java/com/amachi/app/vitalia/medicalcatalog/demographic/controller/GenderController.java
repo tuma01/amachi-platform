@@ -36,17 +36,14 @@ public class GenderController extends BaseController implements GenderApi {
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<GenderDto> createGender(@Valid @RequestBody @NonNull GenderDto dto) {
-        Gender entity = mapper.toEntity(dto);
-        Gender savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Gender savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<GenderDto> updateGender(@NonNull Long id, @Valid @RequestBody @NonNull GenderDto dto) {
-        Gender existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        Gender savedEntity = service.update(id, existing);
+        Gender savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

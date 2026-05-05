@@ -17,7 +17,7 @@ public class UserCreatedEvent extends DomainEvent {
 
     public UserCreatedEvent(Long userId, String email) {
         // Global Identity context: users are platform-level, not tenant-scoped
-        super(LocalDateTime.now(), "SYSTEM");
+        super(LocalDateTime.now(), 0L);
         this.userId = userId;
         this.email = email;
     }

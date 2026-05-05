@@ -10,8 +10,8 @@ import org.mapstruct.Mapping;
 @MapperConfig
 public interface AuditableIgnoreConfig {
     /**
-     * ✅ ÚSALA EN ENTIDADES GLOBALES (País, Province, CIE-10, etc.)
-     * NO incluye 'tenantId' para evitar errores de compilación (Unknown Property).
+     * 🟢 1. PARA ENTIDADES GLOBALES PURAS (Catálogos: CIE-10, País, Alergia, etc.)
+     * Solo ignora campos de auditoría base y externalId. No incluye campos de tenant.
      */
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
@@ -19,12 +19,28 @@ public interface AuditableIgnoreConfig {
     @Mapping(target = "lastModifiedDate", ignore = true)
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "externalId", ignore = true)
-    @interface IgnoreAuditableFields {}
+    @interface IgnorePureAuditableFields {}
+
     /**
-     * ✅ ÚSALA EN ENTIDADES ASOCIADAS A UN TENANT (Pacientes, Empleados, Citas, etc.)
-     * INCLUYE 'tenantId' para asegurar el aislamiento por inquilino.
+     * 🟡 2. PARA ENTIDADES GLOBALES HÍBRIDAS (Identidad: User, Role, Tenant, Theme)
+     * Ignora auditoría, externalId Y los campos de compatibilidad (tenantId/Code).
      */
-    @Mapping(target = "tenantId", ignore = true) // <-- AQUÍ SÍ SE IGNORA EL AISLAMIENTO
+    @Mapping(target = "tenantId", ignore = true)
+    @Mapping(target = "tenantCode", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
+    @Mapping(target = "lastModifiedBy", ignore = true)
+    @Mapping(target = "lastModifiedDate", ignore = true)
+    @Mapping(target = "version", ignore = true)
+    @Mapping(target = "externalId", ignore = true)
+    @interface IgnoreHybridAuditableFields {}
+
+    /**
+     * 🔴 3. PARA ENTIDADES SCOPED (Pacientes, Citas, UserAccount, etc.)
+     * Ignora auditoría y metadatos, pero el tenantId suele ser gestionado por el flujo.
+     */
+    @Mapping(target = "tenantId", ignore = true)
+    @Mapping(target = "tenantCode", ignore = true)
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "lastModifiedBy", ignore = true)
@@ -32,8 +48,7 @@ public interface AuditableIgnoreConfig {
     @Mapping(target = "version", ignore = true)
     @Mapping(target = "externalId", ignore = true)
     @interface IgnoreTenantAuditableFields {}
+
     @Mapping(target = "isDeleted", ignore = true)
-    @Mapping(target = "deleted", ignore = true)
     @interface IgnoreSoftDelete {}
 }
-

@@ -1,6 +1,5 @@
 package com.amachi.app.core.auth.dto.invitation;
 
-import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
 /**
@@ -41,12 +40,9 @@ public class CompleteRegistrationRequest {
     @Size(max = 100, message = "validation.registration.personalEmail.maxLength")
     private String personalEmail;
 
-    @NotBlank(message = "validation.invitation.tenant.required")
-    private String tenantCode;
-
     public CompleteRegistrationRequest() {}
 
-    public CompleteRegistrationRequest(String token, String loginEmail, String password, String firstName, String middleName, String lastName, String secondLastName, String phoneNumber, String personalEmail, String tenantCode) {
+    public CompleteRegistrationRequest(String token, String loginEmail, String password, String firstName, String middleName, String lastName, String secondLastName, String phoneNumber, String personalEmail) {
         this.token = token;
         this.loginEmail = loginEmail;
         this.password = password;
@@ -56,7 +52,6 @@ public class CompleteRegistrationRequest {
         this.secondLastName = secondLastName;
         this.phoneNumber = phoneNumber;
         this.personalEmail = personalEmail;
-        this.tenantCode = tenantCode;
     }
 
     public String getToken() { return token; }
@@ -77,8 +72,6 @@ public class CompleteRegistrationRequest {
     public void setPhoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; }
     public String getPersonalEmail() { return personalEmail; }
     public void setPersonalEmail(String personalEmail) { this.personalEmail = personalEmail; }
-    public String getTenantCode() { return tenantCode; }
-    public void setTenantCode(String tenantCode) { this.tenantCode = tenantCode; }
 
     public static CompleteRegistrationRequestBuilder builder() {
         return new CompleteRegistrationRequestBuilder();
@@ -94,7 +87,6 @@ public class CompleteRegistrationRequest {
         private String secondLastName;
         private String phoneNumber;
         private String personalEmail;
-        private String tenantCode;
 
         public CompleteRegistrationRequestBuilder token(String token) { this.token = token; return this; }
         public CompleteRegistrationRequestBuilder loginEmail(String loginEmail) { this.loginEmail = loginEmail; return this; }
@@ -105,10 +97,9 @@ public class CompleteRegistrationRequest {
         public CompleteRegistrationRequestBuilder secondLastName(String secondLastName) { this.secondLastName = secondLastName; return this; }
         public CompleteRegistrationRequestBuilder phoneNumber(String phoneNumber) { this.phoneNumber = phoneNumber; return this; }
         public CompleteRegistrationRequestBuilder personalEmail(String personalEmail) { this.personalEmail = personalEmail; return this; }
-        public CompleteRegistrationRequestBuilder tenantCode(String tenantCode) { this.tenantCode = tenantCode; return this; }
 
         public CompleteRegistrationRequest build() {
-            return new CompleteRegistrationRequest(token, loginEmail, password, firstName, middleName, lastName, secondLastName, phoneNumber, personalEmail, tenantCode);
+            return new CompleteRegistrationRequest(token, loginEmail, password, firstName, middleName, lastName, secondLastName, phoneNumber, personalEmail);
         }
     }
 }

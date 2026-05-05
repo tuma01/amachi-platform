@@ -31,9 +31,9 @@ public class CivilStatus extends Auditable<String> implements Model {
     @Column(name = "NAME", nullable = false, length = 50)
     private String name; // e.g., Soltero/a, Casado/a
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

@@ -3,7 +3,6 @@ package com.amachi.app.core.management.tenantconfig.mapper;
 import com.amachi.app.core.common.mapper.AuditableIgnoreConfig;
 import com.amachi.app.core.common.mapper.BaseMapperConfig;
 import com.amachi.app.core.common.mapper.EntityDtoMapper;
-import com.amachi.app.core.domain.hospital.entity.Hospital;
 import com.amachi.app.core.management.tenantconfig.dto.TenantConfigDto;
 import com.amachi.app.core.management.tenantconfig.entity.TenantConfig;
 import org.mapstruct.*;
@@ -12,7 +11,7 @@ import org.mapstruct.*;
 public interface TenantConfigMapper extends EntityDtoMapper<TenantConfig, TenantConfigDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnoreTenantAuditableFields
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(target = "tenant.id", source = "tenantId")
     @Mapping(target = "tenant.name", source = "tenantName")
@@ -21,7 +20,7 @@ public interface TenantConfigMapper extends EntityDtoMapper<TenantConfig, Tenant
     @Mapping(target = "tenant.faviconUrl", source = "faviconUrl")
     TenantConfig toEntity(TenantConfigDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnoreTenantAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(target = "tenant.id", source = "tenantId")
     @Mapping(target = "tenant.name", source = "tenantName")
@@ -39,6 +38,7 @@ public interface TenantConfigMapper extends EntityDtoMapper<TenantConfig, Tenant
     @Mapping(target = "faviconUrl", source = "tenant.faviconUrl")
     TenantConfigDto toDto(TenantConfig entity);
 
+    /* 
     @AfterMapping
     default void mapProfessionalData(TenantConfig entity, @MappingTarget TenantConfigDto dto) {
         if (entity.getTenant() instanceof Hospital hospital) {
@@ -88,4 +88,5 @@ public interface TenantConfigMapper extends EntityDtoMapper<TenantConfig, Tenant
             hospital.setSealUrl(dto.getSealUrl());
         }
     }
+    */
 }

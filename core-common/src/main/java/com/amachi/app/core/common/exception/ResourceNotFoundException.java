@@ -1,30 +1,24 @@
 package com.amachi.app.core.common.exception;
 
+import com.amachi.app.core.common.error.ErrorCode;
 import lombok.Getter;
 
 /**
  * Excepción profesional para recursos no encontrados.
- * Se puede especificar un campo (por ejemplo "id") y argumentos adicionales para el mensaje.
  */
 @Getter
-public class ResourceNotFoundException extends RuntimeException {
+public class ResourceNotFoundException extends CoreException {
 
-    private final String key;      // Clave para i18n o mensajes
-    private final Object[] args;   // Argumentos para el mensaje
-    private final String entityName;    // Campo que provocó la excepción (ej. "id")
+    private final String entityName;
 
-    public ResourceNotFoundException(String entityName, String key, Object... args) {
-        super(key);
-        this.key = key;
-        this.args = args;
+    public ResourceNotFoundException(String entityName, String messageKey, Object... args) {
+        super(ErrorCode.BUS_RESOURCE_NOT_FOUND, messageKey, args);
         this.entityName = entityName;
     }
 
     public ResourceNotFoundException(String message) {
         super(message);
-        this.key = "error.generic.not_found";
         this.entityName = "Unknown";
-        this.args = new Object[]{message};
     }
 
 //    public ResourceNotFoundException(String key, String field, Object... args) {

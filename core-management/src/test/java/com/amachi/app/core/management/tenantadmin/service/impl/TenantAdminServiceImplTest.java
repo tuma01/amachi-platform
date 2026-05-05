@@ -1,5 +1,6 @@
 package com.amachi.app.core.management.tenantadmin.service.impl; // Convention: test in same package as impl or generic service package (User requested service)
 
+import com.amachi.app.core.common.context.TenantContext;
 import com.amachi.app.core.common.event.DomainEventPublisher;
 import com.amachi.app.core.common.test.util.AbstractTestSupport;
 import com.amachi.app.core.domain.tenant.repository.TenantRepository;
@@ -39,30 +40,32 @@ class TenantAdminServiceImplTest extends AbstractTestSupport {
 
     @Test
     void createTenantAdmin_WhenValidEntity_ThenSaveAndReturn() {
-        // Arrange
-        // 1. Load Entity from JSON (Simulating data passed from
-        // Controller->Mapper->Service)
-        TenantAdmin entity = loadJson(DATA_PATH + "tenantadmin-entity.json", TenantAdmin.class);
 
-        // 2. Mock Dependencies
-        // Simulate existing tenant lookup (since entity has ID=1, service checks if it
-        // exists)
-        when(tenantRepository.findById(1L)).thenReturn(Optional.of(entity.getTenant()));
+        // 🔥 SET CONTEXT
+        TenantContext.setTenantId(1L);
 
-        // Simulate Save
-        when(tenantAdminRepository.save(any(TenantAdmin.class))).thenReturn(entity);
+        try {
+            // Arrange
+            TenantAdmin entity = loadJson(DATA_PATH + "tenantadmin-entity.json", TenantAdmin.class);
 
-        // Act
-        TenantAdmin result = service.create(entity);
+            when(tenantRepository.findById(1L)).thenReturn(Optional.of(entity.getTenant()));
+            when(tenantAdminRepository.save(any(TenantAdmin.class))).thenReturn(entity);
 
-        // Assert
-        assertThat(result).isNotNull();
-        assertThat(result.getFirstName()).isEqualTo("Felix");
-        assertThat(result.getTenant().getId()).isEqualTo(1L);
+            // Act
+            TenantAdmin result = service.create(entity);
 
-        // Verify Interactions
-        verify(tenantRepository).findById(1L); // Verified existing tenant attachment logic
-        verify(tenantAdminRepository).save(entity);
-        verify(tenantAdminDomainService).completeAccountSetup(entity); // Verified account setup call
+            // Assert
+            assertThat(result).isNotNull();
+            assertThat(result.getPerson().getFirstName()).isEqualTo("Felix");
+            assertThat(result.getTenant().getId()).isEqualTo(1L);
+
+            verify(tenantRepository).findById(1L);
+            verify(tenantAdminRepository).save(entity);
+            verify(tenantAdminDomainService).completeAccountSetup(entity);
+
+        } finally {
+            // 🔥 CLEANUP (MUY IMPORTANTE)
+            TenantContext.clear();
+        }
     }
 }

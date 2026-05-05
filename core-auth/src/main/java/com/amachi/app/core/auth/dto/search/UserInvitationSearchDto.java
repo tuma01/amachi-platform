@@ -6,17 +6,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Getter;
 import lombok.Setter;
 
+/**
+ * DTO para criterios de búsqueda de invitaciones (SaaS Elite Tier).
+ * Jerarquía corregida: extends BaseSearchDto.
+ */
 @Getter
 @Setter
 @Schema(name = "UserInvitationSearch", description = "DTO to hold search criteria for UserInvitations")
-public class UserInvitationSearchDto implements BaseSearchDto {
-
-    private Long id;
-
-    @Override
-    public Long getId() {
-        return id;
-    }
+public class UserInvitationSearchDto extends BaseSearchDto {
 
     @Schema(description = "Filter by Invitation Status")
     private InvitationStatus status;
@@ -26,7 +23,4 @@ public class UserInvitationSearchDto implements BaseSearchDto {
 
     @Schema(description = "Filter by Email")
     private String email;
-    
-    @Schema(description = "Code of the tenant to scope results", required = true)
-    private String tenantCode;
 }

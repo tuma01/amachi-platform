@@ -37,17 +37,14 @@ public class VaccineController extends BaseController implements VaccineApi {
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<VaccineDto> createVaccine(@Valid @RequestBody @NonNull VaccineDto dto) {
-        Vaccine entity = mapper.toEntity(dto);
-        Vaccine savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Vaccine savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<VaccineDto> updateVaccine(@NonNull Long id, @Valid @RequestBody @NonNull VaccineDto dto) {
-        Vaccine existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        Vaccine savedEntity = service.update(id, existing);
+        Vaccine savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

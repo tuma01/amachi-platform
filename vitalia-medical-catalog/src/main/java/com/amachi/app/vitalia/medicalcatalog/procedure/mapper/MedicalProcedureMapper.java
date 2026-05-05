@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface MedicalProcedureMapper extends EntityDtoMapper<MedicalProcedure, MedicalProcedureDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     MedicalProcedure toEntity(MedicalProcedureDto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(MedicalProcedureDto dto, @MappingTarget MedicalProcedure entity);
 

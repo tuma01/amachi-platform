@@ -6,7 +6,7 @@ import com.amachi.app.core.geography.province.dto.ProvinceDto;
 import com.amachi.app.core.geography.province.dto.search.ProvinceSearchDto;
 import com.amachi.app.core.geography.province.entity.Province;
 import com.amachi.app.core.geography.province.mapper.ProvinceMapper;
-import com.amachi.app.core.geography.province.service.impl.ProvinceServiceImpl;
+import com.amachi.app.core.geography.province.service.ProvinceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,34 +18,34 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+/**
+ * Orquestador de Provincias (SaaS Elite Tier).
+ * Certificado: DTO-First (Sin manejo manual de entidades).
+ */
 @RestController
 @RequestMapping("/provinces")
 @RequiredArgsConstructor
 @Slf4j
 public class ProvinceController extends BaseController implements ProvinceApi {
 
-    private final ProvinceServiceImpl service;
+    private final ProvinceService service;
     private final ProvinceMapper mapper;
 
     @Override
     public ResponseEntity<ProvinceDto> getProvinceById(@NonNull @PathVariable Long id) {
-        Province entity = service.getById(id);
-        return ResponseEntity.ok(mapper.toDto(entity));
+        return ResponseEntity.ok(mapper.toDto(service.getById(id)));
     }
 
     @Override
     public ResponseEntity<ProvinceDto> createProvince(@Valid @RequestBody @NonNull ProvinceDto dto) {
-        Province entity = mapper.toEntity(dto);
-        Province savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Province entity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(entity));
     }
 
     @Override
     public ResponseEntity<ProvinceDto> updateProvince(@NonNull Long id, @Valid @RequestBody @NonNull ProvinceDto dto) {
-        Province existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        Province updatedEntity = service.update(id, existingEntity);
-        return ResponseEntity.ok(mapper.toDto(updatedEntity));
+        Province entity = service.update(id, dto);
+        return ResponseEntity.ok(mapper.toDto(entity));
     }
 
     @Override
@@ -56,23 +56,16 @@ public class ProvinceController extends BaseController implements ProvinceApi {
 
     @Override
     public ResponseEntity<List<ProvinceDto>> getAllProvinces() {
-        List<Province> entities = service.getAll();
-        List<ProvinceDto> dtos = entities.stream()
-                .map(mapper::toDto).toList();
-        return ResponseEntity.ok(dtos);
+        return ResponseEntity.ok(service.getAll().stream().map(mapper::toDto).toList());
     }
 
     @Override
     public ResponseEntity<PageResponseDto<ProvinceDto>> getPaginatedProvinces(
             @NonNull ProvinceSearchDto searchDto, Integer pageIndex, Integer pageSize) {
         Page<Province> page = service.getAll(searchDto, pageIndex, pageSize);
-        List<ProvinceDto> dtos = page.getContent()
-                .stream()
-                .map(mapper::toDto)
-                .toList();
-
+        
         PageResponseDto<ProvinceDto> response = PageResponseDto.<ProvinceDto>builder()
-                .content(dtos)
+                .content(page.getContent().stream().map(mapper::toDto).toList())
                 .totalElements(page.getTotalElements())
                 .pageIndex(page.getNumber())
                 .pageSize(page.getSize())

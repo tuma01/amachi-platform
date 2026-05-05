@@ -14,12 +14,12 @@ public interface TenantMapper extends EntityDtoMapper<Tenant, TenantDto> {
 
     @Override
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE, unmappedSourcePolicy = ReportingPolicy.IGNORE)
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnoreHybridAuditableFields
     @Mapping(target = "theme", ignore = true)
     @Mapping(target = "addressId", source = "address.id")
     Tenant toEntity(TenantDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnoreHybridAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(target = "theme", ignore = true)
     @Mapping(target = "addressId", source = "address.id")

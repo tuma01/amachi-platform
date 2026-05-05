@@ -1,4 +1,6 @@
 spring:
+  main:
+    allow-bean-definition-overriding: true
   datasource:
     url: jdbc:mysql://localhost:3306/hospital_db?serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
     username: root
@@ -13,6 +15,7 @@ spring:
     password: ${spring.datasource.password}
     driver-class-name: com.mysql.cj.jdbc.Driver
     locations: "classpath:db/migration"
+    out-of-order: true
 
   jpa:
     show-sql: true

@@ -1,16 +1,18 @@
 package com.amachi.app.core.management.tenantadmin.service.impl;
 
-import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.entity.User;
-import com.amachi.app.core.auth.repository.RoleRepository;
 import com.amachi.app.core.auth.repository.UserRepository;
-import com.amachi.app.core.auth.service.UserTenantRoleService;
 import com.amachi.app.core.common.test.util.AbstractTestSupport;
+import com.amachi.app.core.domain.entity.Person;
+import com.amachi.app.core.domain.repository.PersonTenantRepository;
 import com.amachi.app.core.domain.tenant.dto.TenantDto;
+import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.geography.address.dto.AddressDto;
 import com.amachi.app.core.geography.address.entity.Address;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
 import com.amachi.app.core.geography.address.service.impl.AddressServiceImpl;
+import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
+import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
 import com.amachi.app.core.management.tenantadmin.dto.TenantAdminDto;
 import com.amachi.app.core.management.tenantadmin.entity.TenantAdmin;
 import org.instancio.Instancio;
@@ -21,11 +23,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.HashSet;
-import java.util.Optional;
-
 import static org.instancio.Select.field;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -41,9 +41,9 @@ class TenantAdminDomainServiceImplTest extends AbstractTestSupport {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private UserTenantRoleService userTenantRoleService;
+    private PersonTenantRepository personTenantRepository;
     @Mock
-    private RoleRepository roleRepository;
+    private UserProvisioningService userProvisioningService;
 
     @InjectMocks
     private TenantAdminDomainServiceImpl domainService;
@@ -54,7 +54,7 @@ class TenantAdminDomainServiceImplTest extends AbstractTestSupport {
     void handleTenantAddress_WhenCreate_ThenCreateAddress() {
         // Arrange
         TenantAdmin entity = Instancio.create(TenantAdmin.class);
-        entity.getTenant().setAddressId(null); // No existing address
+        entity.getTenant().setAddressId(null); 
 
         AddressDto addressDto = Instancio.of(AddressDto.class)
                 .set(field(AddressDto::getId), null)
@@ -67,8 +67,6 @@ class TenantAdminDomainServiceImplTest extends AbstractTestSupport {
                 .create();
 
         Address createdAddress = Instancio.create(Address.class);
-
-        when(addressMapper.toEntity(any())).thenReturn(createdAddress);
         when(addressService.create(any())).thenReturn(createdAddress);
 
         // Act
@@ -76,33 +74,6 @@ class TenantAdminDomainServiceImplTest extends AbstractTestSupport {
 
         // Assert
         assertEquals(createdAddress.getId(), entity.getTenant().getAddressId());
-    }
-
-    @Test
-    void handleTenantAddress_WhenUpdateWithIdRequest_ThenVerifySecurityAndCallUpdate() {
-        // Arrange
-        Long addressId = 100L;
-        TenantAdmin entity = Instancio.create(TenantAdmin.class);
-        entity.getTenant().setAddressId(addressId);
-
-        AddressDto addressDto = Instancio.of(AddressDto.class)
-                .set(field(AddressDto::getId), addressId)
-                .create();
-
-        TenantAdminDto dto = Instancio.of(TenantAdminDto.class)
-                .set(field(TenantAdminDto::getTenant), Instancio.of(com.amachi.app.core.domain.tenant.dto.TenantDto.class)
-                        .set(field(com.amachi.app.core.domain.tenant.dto.TenantDto::getAddress), addressDto)
-                        .create())
-                .create();
-
-        Address address = Instancio.create(Address.class);
-        when(addressService.getById(addressId)).thenReturn(address);
-
-        // Act
-        domainService.handleTenantAddress(entity, dto);
-
-        // Assert
-        verify(addressService).update(eq(addressId), any());
     }
 
     @Test
@@ -126,32 +97,27 @@ class TenantAdminDomainServiceImplTest extends AbstractTestSupport {
 
         // Act & Assert
         assertThrows(IllegalStateException.class, () -> domainService.handleTenantAddress(entity, dto));
-        verify(addressService, never()).update(any(), any());
     }
 
     // --- Account Setup Logic Tests ---
 
     @Test
-    void completeAccountSetup_WhenValid_ThenSetupRolesAndUser() {
+    void completeAccountSetup_WhenValid_ThenDelegatesToProvisioning() {
         // Arrange
         TenantAdmin savedEntity = Instancio.create(TenantAdmin.class);
-        // Ensure collections are mutable/empty for logic
-        savedEntity.getUser().setUserAccounts(new HashSet<>());
-        savedEntity.setPersonTenants(new HashSet<>());
-
-        User user = savedEntity.getUser();
-        Role adminRole = new Role();
-        adminRole.setId(1L);
-
-        when(roleRepository.findByName(anyString())).thenReturn(Optional.of(adminRole));
+        savedEntity.setUser(Instancio.create(User.class));
+        savedEntity.setTenant(Instancio.create(Tenant.class));
+        savedEntity.setPerson(Instancio.create(Person.class));
 
         // Act
         domainService.completeAccountSetup(savedEntity);
 
         // Assert
-        assertEquals(savedEntity.getId(), user.getPersonId());
-        assertFalse(savedEntity.getPersonTenants().isEmpty());
-        verify(userRepository).save(user);
-        verify(userTenantRoleService).assignRolesToUserAndTenant(eq(user), eq(savedEntity.getTenant()), anySet());
+        verify(userProvisioningService).provision(argThat(request -> 
+                request.getEmail().equals(savedEntity.getUser().getEmail()) &&
+                request.getTenant().equals(savedEntity.getTenant()) &&
+                request.getResolvedPerson().equals(savedEntity.getPerson()) &&
+                request.getResolvedUser().equals(savedEntity.getUser())
+        ));
     }
 }

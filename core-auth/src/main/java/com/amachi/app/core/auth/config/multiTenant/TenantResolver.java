@@ -1,71 +1,57 @@
 package com.amachi.app.core.auth.config.multiTenant;
 
-import com.amachi.app.core.domain.config.TenantFactory;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
+import com.amachi.app.core.domain.tenant.repository.TenantRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import jakarta.servlet.http.HttpServletRequest;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * Resuelve el TenantId (Long) a partir del TenantCode (String) con soporte de caché.
+ * SaaS Elite Tier: Optimización de performance para aislamiento de datos.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class TenantResolver {
 
-    private final TenantFactory tenantFactory;
+    private final TenantRepository tenantRepository;
+    private final Map<String, Long> cache = new ConcurrentHashMap<>();
 
-    public String resolveTenant(HttpServletRequest request) {
-
-        TenantFactory.TenantInfo local = tenantFactory.getLocalTenant();
-
-        String tenantCode = null;
-
-        // 1️⃣ SUBDOMINIO
-        String host = request.getServerName();
-        if (host != null && host.contains(".")) {
-            String sub = host.split("\\.")[0];
-            if (tenantFactory.exists(sub)) {
-                log.debug("Tenant resuelto desde subdominio: {}", sub);
-                return sub;
-            }
+    /**
+     * Resuelve el ID del tenant. 
+     * Si no se encuentra en caché, lo busca en base de datos.
+     * 
+     * @param tenantCode Código alfanumérico del tenant (ej: hospital-a).
+     * @return ID numérico del tenant.
+     */
+    public Long resolveTenantId(String tenantCode) {
+        if (tenantCode == null || tenantCode.isBlank()) {
+            throw new RuntimeException("Missing tenant code in request");
         }
 
-        // 2️⃣ HEADER FALLBACK
-        String header = local.fallbackHeader();
-        if (header != null && !header.isBlank()) {
-            tenantCode = request.getHeader(header);
-            if (tenantCode != null && !tenantCode.isBlank()) {
-                log.debug("Tenant resuelto desde header '{}': {}", header, tenantCode);
-                return tenantCode;
-            }
-        }
-
-        // 3️⃣ PARÁMETRO
-        tenantCode = request.getParameter("tenantCode");
-        if (tenantCode != null && !tenantCode.isBlank()) {
-            log.debug("Tenant resuelto desde parámetro tenantCode: {}", tenantCode);
-            return tenantCode;
-        }
-
-        // 4️⃣ LOCAL DEFAULT
-        if (local != null) {
-            log.debug("Tenant resuelto por fallback local: {}", local.code());
-            return local.code();
-        }
-
-        throw new RuntimeException("No se pudo resolver tenantCode");
+        return cache.computeIfAbsent(tenantCode, code -> {
+            log.debug("🔍 Cache miss para tenant [{}]. Buscando en DB...", code);
+            Long id = tenantRepository.findByCode(code)
+                    .map(Tenant::getId)
+                    .orElseThrow(() -> new RuntimeException("Tenant no encontrado para el código: " + code));
+            
+            log.debug("✅ Tenant [{}] resuelto a ID [{}]", code, id);
+            return id;
+        });
     }
 
-    public TenantFactory.TenantInfo getTenantInfo(String tenantCode) {
-        return tenantFactory.getTenant(tenantCode);
+    /**
+     * Limpia la caché si hay cambios en los tenants.
+     */
+    public void evictCache(String tenantCode) {
+        cache.remove(tenantCode);
     }
 
-    public TenantFactory.TenantInfo getGlobalTenant() {
-        return tenantFactory.getGlobalTenant();
-    }
-
-    public TenantFactory.TenantInfo getLocalTenant() {
-        return tenantFactory.getLocalTenant();
+    public void clearCache() {
+        cache.clear();
     }
 }

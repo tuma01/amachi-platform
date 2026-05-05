@@ -1,6 +1,10 @@
 package com.amachi.app.core.auth.config.security;
 
 import com.amachi.app.core.auth.config.multiTenant.TenantCache;
+import com.amachi.app.core.auth.context.AuthContext;
+import com.amachi.app.core.auth.entity.User;
+import com.amachi.app.core.auth.exception.AppSecurityException;
+import com.amachi.app.core.auth.service.AuthValidationService;
 import com.amachi.app.core.auth.service.JwtService;
 import com.amachi.app.core.auth.service.TokenService;
 import com.amachi.app.core.auth.service.impl.JwtServiceImpl;
@@ -30,6 +34,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -43,6 +48,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         private final TenantCache tenantCache;
         private final UserDetailsService userDetailsService;
         private final TokenService tokenService;
+        private final AuthValidationService authValidationService;
 
         // Endpoints que no requieren validación de token (Públicos)
         // Deben coincidir con SecurityConfig.java
@@ -65,98 +71,151 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 String servletPath = request.getServletPath();
                 String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
 
+                // Reset security context only — TenantContext must NOT be cleared here
+                // because MultiTenantFilter (which runs before this filter) already set it.
+                // TenantContext is cleared in the finally block below.
+                SecurityContextHolder.clearContext();
+
                 boolean isGlobalEndpoint = GLOBAL_ENDPOINTS.stream().anyMatch(servletPath::startsWith);
 
-                if (authHeader != null && authHeader.startsWith("Bearer ")) {
-                        String token = authHeader.substring(7);
+                try {
 
-                        try {
-                                // 🔹 Validar token (firma y expiración)
-                                jwtService.validateToken(token);
-
-                                // 🔹 Validar blacklist
-                                if (tokenService.isTokenBlacklisted(token)) {
-                                        log.warn("⛔ Token blacklisted detected: {}",
-                                                        token.substring(0, Math.min(10, token.length())) + "...");
-                                        throw new com.amachi.app.core.auth.exception.AppSecurityException(
-                                                        ErrorCode.SEC_INVALID_TOKEN,
-                                                        "security.token.blacklisted");
-                                }
-
-                                // 🔹 Extraer datos del JWT
-                                String username = jwtService.extractUsername(token);
-                                String tenantCode = jwtService.extractTenantCode(token);
-                                List<String> roles = jwtService.extractRoles(token);
-
-                                // 🔹 Validación de tenant
-                                boolean isSuperAdmin = roles.contains("ROLE_SUPER_ADMIN");
-                                if (!isGlobalEndpoint && !isSuperAdmin) {
-                                        // Anti-Spoofing: El tenant del Token debe coincidir con el de la request
-                                        String requestTenantCode = (String) request.getAttribute("tenantCode");
-                                        if (requestTenantCode != null && !requestTenantCode.equals(tenantCode)
-                                                        && !"GLOBAL".equalsIgnoreCase(requestTenantCode)) {
-                                                log.error("🚨 POTENTIAL SPOOFING ATTEMPT: Token Tenant '{}' vs Request Tenant '{}' on path '{}'",
-                                                                tenantCode, requestTenantCode, servletPath);
-                                                throw new RuntimeException("Security Error: Token tenant mismatch");
-                                        }
-
-                                        Tenant tenant = tenantCache.getTenant(tenantCode);
-                                        if (tenant == null) {
-                                                throw new RuntimeException("Tenant not found for code: " + tenantCode);
-                                        }
-                                }
-
-                                // 🔹 Cargar usuario y setear contexto
-                                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-                                List<GrantedAuthority> authorities = roles.stream()
-                                                .map(SimpleGrantedAuthority::new)
-                                                .collect(Collectors.toUnmodifiableList());
-
-                                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                                                userDetails, null, authorities);
-                                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                                SecurityContextHolder.getContext().setAuthentication(authToken);
-
-                                // 🔹 ESTABLECER CONTEXTO DE TENANT (THREAD-LOCAL)
-                                try {
-                                        TenantContext.setTenant(tenantCode);
-                                        log.trace("🏗️ TenantContext initialized with Code: {}", tenantCode);
-                                } catch (Exception e) {
-                                        log.warn("⚠️ Could not set TenantContext for code {}: {}", tenantCode, e.getMessage());
-                                }
-
-                                log.debug("✅ JWT valid for user '{}' on path '{}', tenant: {}",
-                                                username, servletPath, tenantCode);
-
-                        } catch (JwtServiceImpl.TokenException ex) {
-                                log.warn("❌ Invalid JWT for path {}: {}", servletPath, ex.getMessage());
-                                writeErrorResponse(response, ErrorCode.SEC_INVALID_TOKEN,
-                                                Translator.toLocale("security.invalid.token", new Object[] { ex.getMessage() }),
-                                                servletPath);
-                                return;
-                        } catch (com.amachi.app.core.auth.exception.AppSecurityException ex) {
-                                log.warn("⛔ Security Exception for path {}: {}", servletPath, ex.getMessage());
-                                writeErrorResponse(response, ex.getErrorCode(), Translator.toLocale(ex.getKey(), null), servletPath);
-                                return;
-                        } catch (Exception ex) {
-                                log.error("🚫 JWT authentication error for path {}: {}", servletPath, ex.getMessage());
-                                writeErrorResponse(response, ErrorCode.SEC_AUTHENTICATION_ERROR,
-                                                Translator.toLocale("security.auth.failed", new Object[] { ex.getMessage() }),
+                        // 🔹 1. Endpoint protegido sin token
+                        if ((authHeader == null || !authHeader.startsWith("Bearer ")) && !isGlobalEndpoint) {
+                                writeErrorResponse(response,
+                                                ErrorCode.SEC_AUTHENTICATION_ERROR,
+                                                Translator.toLocale("security.auth.missing.token", null),
                                                 servletPath);
                                 return;
                         }
 
-                } else if (!isGlobalEndpoint) {
-                        // 🔹 Endpoint protegido sin token
-                        writeErrorResponse(response, ErrorCode.SEC_AUTHENTICATION_ERROR,
-                                        Translator.toLocale("security.auth.missing.token", null), servletPath);
-                        return;
-                }
+                        // 🔹 2. Endpoint público sin token
+                        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+                                filterChain.doFilter(request, response);
+                                return;
+                        }
 
-                try {
+                        String token = authHeader.substring(7);
+
+                        // 🔹 3. Validación JWT (firma + expiración)
+                        jwtService.validateToken(token);
+
+                        // 🔹 4. Blacklist
+                        if (tokenService.isTokenBlacklisted(token)) {
+                                throw new AppSecurityException(
+                                                ErrorCode.SEC_INVALID_TOKEN,
+                                                "security.token.blacklisted");
+                        }
+
+                        // 🔹 5. Extraer datos
+                        String username = jwtService.extractUsername(token);
+                        String tenantCode = jwtService.extractTenantCode(token);
+                        List<String> roles = jwtService.extractRoles(token);
+
+                        if (tenantCode == null || tenantCode.isBlank()) {
+                                throw new AppSecurityException(
+                                                ErrorCode.SEC_INVALID_TOKEN,
+                                                "security.token.invalid.tenant");
+                        }
+
+                        boolean isSuperAdmin = roles.contains("ROLE_SUPER_ADMIN");
+
+                        // 🔹 6. Resolver tenant (TU IMPLEMENTACIÓN)
+                        Tenant tenant = tenantCache.getTenant(tenantCode);
+                        if (tenant == null) {
+                                throw new AppSecurityException(
+                                                ErrorCode.SEC_TENANT_NOT_FOUND,
+                                                "security.tenant.not_found",
+                                                tenantCode);
+                        }
+
+                        // 🔹 7. Anti-Spoofing (TU LÓGICA ORIGINAL, CORRECTA)
+                        if (!isGlobalEndpoint && !isSuperAdmin) {
+                                String requestTenantCode = (String) request.getAttribute("tenantCode");
+
+                                if (requestTenantCode != null
+                                                && !requestTenantCode.equals(tenantCode)
+                                                && !"GLOBAL".equalsIgnoreCase(requestTenantCode)) {
+
+                                        log.error("🚨 SPOOFING: Token tenant '{}' vs Request tenant '{}'",
+                                                        tenantCode, requestTenantCode);
+
+                                        throw new AppSecurityException(
+                                                        ErrorCode.SEC_INVALID_TOKEN,
+                                                        "security.token.tenant.mismatch");
+                                }
+                        }
+
+                        // 🔹 8. Cargar usuario
+                        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+                        if (!(userDetails instanceof User user)) {
+                                throw new AppSecurityException(
+                                                ErrorCode.SEC_INVALID_TOKEN,
+                                                "security.user.invalid");
+                        }
+
+                        // 🔹 9. Validación User-Tenant
+                        if (!isSuperAdmin) {
+                                authValidationService.validateUserTenant(user.getId(), tenant.getId());
+                        }
+
+                        // 🔹 10. Authorities
+                        List<GrantedAuthority> authorities = roles.stream()
+                                        .map(SimpleGrantedAuthority::new)
+                                        .collect(Collectors.toUnmodifiableList());
+
+                        // 🔹 11. AuthContext
+                        AuthContext authContext = AuthContext.builder()
+                                        .userId(user.getId())
+                                        .tenantId(tenant.getId())
+                                        .tenantCode(tenantCode)
+                                        .roles(new HashSet<>(roles))
+                                        .build();
+
+                        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                                        authContext, null, authorities);
+
+                        authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                        // 🔹 12. TenantContext (CRÍTICO)
+                        TenantContext.setTenantId(tenant.getId());
+                        TenantContext.setTenantCode(tenantCode);
+
+                        log.debug("✅ Auth OK user='{}', tenant='{}', path='{}'",
+                                        username, tenantCode, servletPath);
+
+                        // 🔹 13. Continuar
                         filterChain.doFilter(request, response);
+
+                } catch (JwtServiceImpl.TokenException ex) {
+
+                        writeErrorResponse(response,
+                                        ErrorCode.SEC_INVALID_TOKEN,
+                                        Translator.toLocale("security.invalid.token", new Object[] { ex.getMessage() }),
+                                        servletPath);
+
+                } catch (AppSecurityException ex) {
+
+                        writeErrorResponse(response,
+                                        ex.getErrorCode(),
+                                        Translator.toLocale(ex.getKey(), null),
+                                        servletPath);
+
+                } catch (Exception ex) {
+
+                        log.error("🚫 Auth error: {}", ex.getMessage());
+
+                        writeErrorResponse(response,
+                                        ErrorCode.SEC_AUTHENTICATION_ERROR,
+                                        Translator.toLocale("security.auth.failed", new Object[] { ex.getMessage() }),
+                                        servletPath);
+
                 } finally {
+
+                        // 🔹 LIMPIEZA FINAL
                         TenantContext.clear();
+                        SecurityContextHolder.clearContext();
                 }
         }
 

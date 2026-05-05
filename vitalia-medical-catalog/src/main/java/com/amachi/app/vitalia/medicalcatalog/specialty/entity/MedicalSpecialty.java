@@ -16,7 +16,6 @@ import lombok.experimental.SuperBuilder;
 @NoArgsConstructor
 @AllArgsConstructor
 @SuperBuilder
-@ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(
@@ -26,8 +25,6 @@ import lombok.experimental.SuperBuilder;
     }
 )
 public class MedicalSpecialty extends Auditable<String> implements Model {
-
-
 
     @NotBlank(message = "Code {err.mandatory}")
     @Column(name = "CODE", nullable = false, length = 20)
@@ -44,9 +41,9 @@ public class MedicalSpecialty extends Auditable<String> implements Model {
     @Builder.Default
     private String targetProfession = "BOTH"; // DOCTOR, NURSE, BOTH
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

@@ -40,12 +40,12 @@ public class MedicalConsultationType extends Auditable<String> implements Model 
     private String description;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "FK_ID_SPECIALTY", foreignKey = @ForeignKey(name = "FK_CAT_CONS_TYPE_SPEC"))
+    @JoinColumn(name = "FK_ID_SPECIALTY", foreignKey = @ForeignKey(name = "FK_MEDICAL_CONSULTATION_TYPE_SPECIALTY"))
     private MedicalSpecialty specialty;
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

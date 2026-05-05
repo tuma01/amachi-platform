@@ -16,10 +16,10 @@ import org.mapstruct.ReportingPolicy;
 public interface IdentificationTypeMapper extends EntityDtoMapper<IdentificationType, IdentificationTypeDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     IdentificationType toEntity(IdentificationTypeDto dto);
  
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(IdentificationTypeDto dto, @MappingTarget IdentificationType entity);
 

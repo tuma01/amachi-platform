@@ -1,5 +1,8 @@
 package com.amachi.app.core.auth.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import com.amachi.app.core.common.annotation.TenantAware;
 import com.amachi.app.core.auth.bridge.TenantBridge;
 import com.amachi.app.core.auth.dto.ActivationRequest;
 import com.amachi.app.core.auth.dto.ChangePasswordRequest;
@@ -39,9 +42,13 @@ import java.util.List;
  * (SaaS Elite Identity Hardened - Manual implementation for reliability)
  */
 @Service
+@TenantAware
 @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AccountServiceImpl implements AccountService {
+
+    private static final Duration RESET_TOKEN_VALIDITY = Duration.ofHours(24);
 
     private final UserRepository userRepository;
     private final UserAccountRepository userAccountRepository;
@@ -65,10 +72,11 @@ public class AccountServiceImpl implements AccountService {
 
     @Transactional
     public void requestPasswordReset(PasswordResetRequest request) {
-        tenantBridge.findByCode(request.getTenantCode());
+        String tenantCode = TenantContext.getTenantCode();
+        tenantBridge.findByCode(tenantCode);
 
         User user = userAccountRepository
-                .findByUserEmailAndTenantCode(request.getEmail(), request.getTenantCode())
+                .findByUserEmailAndTenantCode(request.getEmail(), tenantCode)
                 .map(UserAccount::getUser)
                 .orElseThrow(() -> new AppSecurityException(ErrorCode.SEC_USER_NOT_FOUND,
                         "security.user.not_found_in_tenant", request.getEmail()));
@@ -78,7 +86,7 @@ public class AccountServiceImpl implements AccountService {
         JwtUserDto jwtUserDto = JwtUserDto.builder()
                 .userId(user.getId())
                 .email(user.getEmail())
-                .tenantCode(request.getTenantCode())
+                .tenantCode(tenantCode)
                 .build();
 
         String resetToken = jwtService.generatePasswordResetToken(jwtUserDto);
@@ -90,7 +98,7 @@ public class AccountServiceImpl implements AccountService {
                 .build();
 
         passwordResetTokenRepository.save(tokenEntity);
-        log.info("📩 Password reset token generated for {} in tenant {}", user.getEmail(), request.getTenantCode());
+        log.info("📩 Password reset token generated for {} in tenant {}", user.getEmail(), tenantCode);
     }
 
     @Override
@@ -143,9 +151,10 @@ public class AccountServiceImpl implements AccountService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new AppSecurityException(ErrorCode.SEC_USER_NOT_FOUND, "error.resource.not.found", userId.toString()));
 
-        String tenantCode = TenantContext.getTenant();
-        Tenant tenant = (tenantCode != null) ? tenantBridge.findByCode(tenantCode) : null;
+        Long currentTenantId = TenantContext.getTenantId();
+        Tenant tenant = (currentTenantId != null) ? tenantBridge.findById(currentTenantId) : null;
 
+        String tenantCode = tenant != null ? tenant.getCode() : null;
         String tenantName = tenant != null ? tenant.getName() : null;
         Long tenantId = tenant != null ? tenant.getId() : null;
 

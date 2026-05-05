@@ -38,9 +38,9 @@ public class Icd10 extends Auditable<String> implements Model {
     @Column(name = "DESCRIPTION", nullable = false, length = 500)
     private String description;
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

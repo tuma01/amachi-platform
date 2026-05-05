@@ -1,35 +1,61 @@
 package com.amachi.app.core.domain.theme.entity;
 
-import jakarta.persistence.*;
-import com.amachi.app.core.common.enums.ThemeMode;
-import lombok.*;
-import lombok.experimental.SuperBuilder;
-import com.amachi.app.core.common.entity.BaseTenantEntity;
+import com.amachi.app.core.common.entity.Auditable;
 import com.amachi.app.core.common.entity.Model;
 import com.amachi.app.core.common.entity.SoftDeletable;
+import com.amachi.app.core.common.enums.ThemeMode;
+import jakarta.persistence.*;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
+
+import static com.amachi.app.core.common.context.TenantContext.getTenantCode;
+import static com.amachi.app.core.common.context.TenantContext.setTenantCode;
 
 /**
  * Theme Entity (Tenant-specific UI Configuration).
  * SaaS Elite Tier Standard.
  */
 @Getter
+@SuperBuilder
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
+
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = true)
 @Entity
 @Table(name = "DMN_THEME")
-public class Theme extends BaseTenantEntity implements Model, SoftDeletable {
+public class Theme extends Auditable<String> implements SoftDeletable, Model {
 
     @Column(name = "IS_DELETED", nullable = false)
     @Builder.Default
-    private Boolean isDeleted = false;
+    private boolean deleted = false;
+
+    /**
+     * SCHEMA COMPATIBILITY FIELDS
+     * Logically global, physically scoped in legacy DB.
+     */
+    @Column(name = "TENANT_ID", nullable = false)
+    @Builder.Default
+    private Long tenantId = 0L;
+
+    @Column(name = "TENANT_CODE", nullable = false, length = 50)
+    @Builder.Default
+    private String tenantCode = "GLOBAL";
 
     @Override
     public void delete() {
-        this.isDeleted = true;
+        this.deleted = true;
+    }
+
+    @Override
+    public Boolean getDeleted() {
+        return deleted;
+    }
+
+    @Override
+    public void setDeleted(Boolean deleted) {
+        this.deleted = deleted;
     }
 
     @Column(name = "CODE", length = 50, nullable = false)
@@ -91,7 +117,7 @@ public class Theme extends BaseTenantEntity implements Model, SoftDeletable {
 
     @Column(name = "IS_TEMPLATE", nullable = false)
     @Builder.Default
-    private boolean isTemplate = false;
+    private boolean template = false;
 
     @PrePersist
     @PreUpdate
@@ -102,8 +128,8 @@ public class Theme extends BaseTenantEntity implements Model, SoftDeletable {
         if (this.name != null) {
             this.name = this.name.trim();
         }
-        if (getTenantId() == null) {
-            setTenantId("SYSTEM");
+        if (getTenantCode() == null) {
+            setTenantCode("SYSTEM");
         }
     }
 }

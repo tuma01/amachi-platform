@@ -35,17 +35,14 @@ public class AllergyController extends BaseController implements AllergyApi {
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<AllergyDto> createAllergy(@Valid @RequestBody @NonNull AllergyDto dto) {
-        Allergy entity = mapper.toEntity(dto);
-        Allergy savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Allergy savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<AllergyDto> updateAllergy(@NonNull Long id, @Valid @RequestBody @NonNull AllergyDto dto) {
-        Allergy existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        Allergy savedEntity = service.update(id, existing);
+        Allergy savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

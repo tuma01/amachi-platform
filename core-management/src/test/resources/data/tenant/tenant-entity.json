@@ -3,7 +3,7 @@
     "code": "TENANT001",
     "name": "General Hospital",
     "type": "HOSPITAL",
-    "isActive": true,
+    "active": true,
     "description": "Main test hospital",
     "theme": null,
     "addressId": 100,

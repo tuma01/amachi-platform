@@ -16,10 +16,10 @@ import org.mapstruct.NullValuePropertyMappingStrategy;
 public interface CountryMapper extends EntityDtoMapper<Country, CountryDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     Country toEntity(CountryDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     void updateEntityFromDto(CountryDto dto, @MappingTarget Country entity);
 

@@ -1,10 +1,11 @@
 package com.amachi.app.core.auth.entity;
 
-import com.amachi.app.core.common.entity.BaseTenantEntity;
+import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import jakarta.persistence.*;
-import lombok.*;
 import lombok.experimental.SuperBuilder;
+import lombok.*;
+
 import java.time.LocalDateTime;
 
 /**
@@ -13,8 +14,9 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Getter
-@Setter
 @SuperBuilder
+@Setter
+
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(
@@ -22,7 +24,7 @@ import java.time.LocalDateTime;
     uniqueConstraints = @UniqueConstraint(name = "UK_ACTIVATION_TOKEN", columnNames = {"TOKEN"}),
     indexes = @Index(name = "IDX_ACTIVATION_TENANT", columnList = "TENANT_ID")
 )
-public class ActivationToken extends BaseTenantEntity {
+public class ActivationToken extends AuditableTenantEntity {
 
     @Column(name = "TOKEN", nullable = false, unique = true, length = 100)
     private String token;
@@ -38,7 +40,6 @@ public class ActivationToken extends BaseTenantEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
         name = "TENANT_ID",
-        referencedColumnName = "CODE",
         nullable = false,
         insertable = false,
         updatable = false,
@@ -51,7 +52,6 @@ public class ActivationToken extends BaseTenantEntity {
 
     @Column(name = "EXPIRES_AT", nullable = false)
     private LocalDateTime expiresAt;
-
     @Builder.Default
     @Column(name = "USED", nullable = false)
     private boolean used = false;

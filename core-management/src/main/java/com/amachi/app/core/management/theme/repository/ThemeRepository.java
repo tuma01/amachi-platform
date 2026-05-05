@@ -11,5 +11,5 @@ public interface ThemeRepository extends CommonRepository<Theme, Long> {
 
     Optional<Theme> findByCode(String defaultTheme);
 
-    java.util.List<Theme> findAllByIsTemplateTrue();
+    java.util.List<Theme> findAllByTemplateTrue();
 }

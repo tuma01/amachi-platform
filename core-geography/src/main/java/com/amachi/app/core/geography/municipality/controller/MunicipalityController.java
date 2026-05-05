@@ -35,16 +35,13 @@ public class MunicipalityController extends BaseController implements Municipali
 
     @Override
     public ResponseEntity<MunicipalityDto> createMunicipality(@Valid @RequestBody @NonNull MunicipalityDto dto) {
-        Municipality entity = mapper.toEntity(dto);
-        Municipality savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Municipality savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     public ResponseEntity<MunicipalityDto> updateMunicipality(@NonNull Long id, @Valid @RequestBody @NonNull MunicipalityDto dto) {
-        Municipality existingEntity = service.getById(id);
-        mapper.updateEntityFromDto(dto, existingEntity);
-        Municipality updatedEntity = service.update(id, existingEntity);
+        Municipality updatedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(updatedEntity));
     }
 

@@ -30,14 +30,12 @@ public class MedicationSpecification implements Specification<Medication> {
             if (criteria.getCode() != null && !criteria.getCode().isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("code")), "%" + criteria.getCode().toLowerCase() + "%"));
             }
-            if (criteria.getGenericName() != null && !criteria.getGenericName().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("genericName")), "%" + criteria.getGenericName().toLowerCase() + "%"));
-            }
-            if (criteria.getCommercialName() != null && !criteria.getCommercialName().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("commercialName")), "%" + criteria.getCommercialName().toLowerCase() + "%"));
-            }
-            if (criteria.getActive() != null) {
-                predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+            if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+                String q = "%" + criteria.getQuery().toLowerCase() + "%";
+                predicates.add(cb.or(
+                    cb.like(cb.lower(root.get("genericName")), q),
+                    cb.like(cb.lower(root.get("commercialName")), q)
+                ));
             }
         }
 

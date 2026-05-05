@@ -2,7 +2,6 @@ package com.amachi.app.core.domain.entity;
 
 import com.amachi.app.core.common.entity.Auditable;
 import com.amachi.app.core.common.entity.Model;
-import com.amachi.app.core.common.entity.SoftDeletable;
 import com.amachi.app.core.common.enums.CivilStatus;
 import com.amachi.app.core.common.enums.DocumentType;
 import com.amachi.app.core.common.enums.Gender;
@@ -17,8 +16,10 @@ import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
+
+import org.hibernate.annotations.Where;
+import org.hibernate.envers.RelationTargetAuditMode;
 
 /**
  * Entidad Person (SaaS Elite Tier).
@@ -27,21 +28,15 @@ import java.util.Set;
  */
 @Entity
 @Table(name = "DMN_PERSON")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 @SuperBuilder
-@EqualsAndHashCode(callSuper = true, exclude = {"personTenants"})
+@EqualsAndHashCode(callSuper = true, exclude = { "personTenants" })
 @Audited
-public class Person extends Auditable<String> implements Model, SoftDeletable {
-
-    @Column(name = "IS_DELETED", nullable = false)
-    @Builder.Default
-    private Boolean isDeleted = false;
-
-    @Override
-    public void delete() {
-        this.isDeleted = true;
-    }
+@Where(clause = "is_deleted = false")
+public class Person extends Auditable<String> implements Model {
 
     @Column(name = "NATIONAL_ID", length = 100, unique = true)
     private String nationalId;
@@ -55,7 +50,7 @@ public class Person extends Auditable<String> implements Model, SoftDeletable {
 
     @NotBlank(message = "{err.required}")
     @Size(min = 2, max = 50)
-    @Column(name = "FIRST_NAME", nullable = false) 
+    @Column(name = "FIRST_NAME", nullable = false)
     private String firstName;
 
     @Column(name = "MIDDLE_NAME", length = 50)
@@ -79,6 +74,7 @@ public class Person extends Auditable<String> implements Model, SoftDeletable {
     @Column(name = "GENDER")
     private Gender gender;
 
+    @Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "FK_ID_ADDRESS", foreignKey = @ForeignKey(name = "FK_PERSON_ADDRESS"))
     private Address address;
@@ -89,7 +85,7 @@ public class Person extends Auditable<String> implements Model, SoftDeletable {
     @Column(name = "MOBILE_NUMBER", length = 50)
     private String mobileNumber;
 
-    @Column(name = "EMAIL", length = 100)
+    @Column(name = "EMAIL", length = 100, unique = true)
     private String email;
 
     @Builder.Default
@@ -99,19 +95,24 @@ public class Person extends Auditable<String> implements Model, SoftDeletable {
     @PrePersist
     @PreUpdate
     private void normalize() {
-        if (this.firstName != null) this.firstName = this.firstName.trim();
-        if (this.lastName != null) this.lastName = this.lastName.trim();
-        if (this.nationalId != null) this.nationalId = this.nationalId.trim().toUpperCase();
-        if (this.nationalHealthId != null) this.nationalHealthId = this.nationalHealthId.trim().toUpperCase();
-        if (this.email != null) this.email = this.email.trim().toLowerCase();
+        if (this.firstName != null)
+            this.firstName = this.firstName.trim();
+        if (this.lastName != null)
+            this.lastName = this.lastName.trim();
+        if (this.nationalId != null)
+            this.nationalId = this.nationalId.trim().toUpperCase();
+        if (this.nationalHealthId != null)
+            this.nationalHealthId = this.nationalHealthId.trim().toUpperCase();
+        if (this.email != null)
+            this.email = this.email.trim().toLowerCase();
     }
 
-    @Transient
+    /**
+     * Devuelve el nombre completo (First + Last).
+     */
     public String getFullName() {
-        return String.join(" ",
-                Optional.ofNullable(firstName).orElse(""),
-                Optional.ofNullable(middleName).orElse(""),
-                Optional.ofNullable(lastName).orElse(""),
-                Optional.ofNullable(secondLastName).orElse("")).trim();
+        return String.format("%s %s", 
+            firstName != null ? firstName : "", 
+            lastName != null ? lastName : "").trim();
     }
 }

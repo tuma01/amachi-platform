@@ -9,8 +9,6 @@ import lombok.Getter;
 import java.time.Instant;
 import java.util.List;
 
-@Getter
-@Builder
 public class ApiResponse<T> {
     @Schema(description = "Indicates if the API call was successful", example = "true",
             requiredMode = Schema.RequiredMode.REQUIRED)
@@ -34,6 +32,46 @@ public class ApiResponse<T> {
     @Schema(description = "HTTP status code of the response", example = "200",
             requiredMode = Schema.RequiredMode.REQUIRED)
     private final int status;
+
+    private ApiResponse(boolean success, T data, List<ErrorDetail> errors, String path, String timestamp, int status) {
+        this.success = success;
+        this.data = data;
+        this.errors = errors;
+        this.path = path;
+        this.timestamp = timestamp;
+        this.status = status;
+    }
+
+    public boolean isSuccess() { return success; }
+    public T getData() { return data; }
+    public List<ErrorDetail> getErrors() { return errors; }
+    public String getPath() { return path; }
+    public String getTimestamp() { return timestamp; }
+    public int getStatus() { return status; }
+
+    public static <T> ApiResponseBuilder<T> builder() {
+        return new ApiResponseBuilder<>();
+    }
+
+    public static class ApiResponseBuilder<T> {
+        private boolean success;
+        private T data;
+        private List<ErrorDetail> errors;
+        private String path;
+        private String timestamp;
+        private int status;
+
+        public ApiResponseBuilder<T> success(boolean success) { this.success = success; return this; }
+        public ApiResponseBuilder<T> data(T data) { this.data = data; return this; }
+        public ApiResponseBuilder<T> errors(List<ErrorDetail> errors) { this.errors = errors; return this; }
+        public ApiResponseBuilder<T> path(String path) { this.path = path; return this; }
+        public ApiResponseBuilder<T> timestamp(String timestamp) { this.timestamp = timestamp; return this; }
+        public ApiResponseBuilder<T> status(int status) { this.status = status; return this; }
+
+        public ApiResponse<T> build() {
+            return new ApiResponse<>(success, data, errors, path, timestamp, status);
+        }
+    }
 
     // ==========================
     // Success Helpers

@@ -24,8 +24,7 @@ import lombok.experimental.SuperBuilder;
 @Table(
     name = "GEO_COUNTRY",
     uniqueConstraints = {
-        @UniqueConstraint(name = "UK_ISO_COUNTRY", columnNames = {"ISO"}),
-        @UniqueConstraint(name = "UK_NAME_COUNTRY", columnNames = {"NAME"})
+        @UniqueConstraint(name = "UK_ISO_COUNTRY", columnNames = {"ISO"})
     },
     indexes = {
         @Index(name = "IDX_COUNTRY_ISO", columnList = "ISO"),

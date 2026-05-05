@@ -72,9 +72,9 @@ public class HealthcareProvider extends Auditable<String> implements Model {
     @JoinColumn(name = "FK_ID_HQ_ADDRESS", foreignKey = @ForeignKey(name = "FK_PROVIDER_HQ_ADDRESS"))
     private Address hqAddress;
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     // ==========================================
     // 🧠 Lógica de Normalización (Elite Standard)

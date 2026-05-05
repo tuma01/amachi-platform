@@ -1,20 +1,17 @@
 package com.amachi.app.core.management.tenantadmin.service.impl;
 
-import com.amachi.app.core.auth.entity.Role;
-import com.amachi.app.core.auth.entity.User;
-import com.amachi.app.core.auth.repository.RoleRepository;
 import com.amachi.app.core.auth.repository.UserRepository;
-import com.amachi.app.core.auth.service.UserTenantRoleService;
-import com.amachi.app.core.common.enums.RelationStatus;
+import com.amachi.app.core.common.annotation.TenantAware;
+import com.amachi.app.core.common.enums.DomainContext;
 import com.amachi.app.core.common.enums.RoleContext;
-import com.amachi.app.core.common.exception.ResourceNotFoundException;
-import com.amachi.app.core.common.utils.AppConstants;
-import com.amachi.app.core.domain.entity.PersonTenant;
+import com.amachi.app.core.domain.repository.PersonTenantRepository;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.geography.address.dto.AddressDto;
 import com.amachi.app.core.geography.address.entity.Address;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
 import com.amachi.app.core.geography.address.service.impl.AddressServiceImpl;
+import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
+import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
 import com.amachi.app.core.management.tenantadmin.dto.TenantAdminDto;
 import com.amachi.app.core.management.tenantadmin.entity.TenantAdmin;
 import lombok.RequiredArgsConstructor;
@@ -23,11 +20,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.HashSet;
-
 @Service
+@TenantAware
 @RequiredArgsConstructor
 @Slf4j
 public class TenantAdminDomainServiceImpl {
@@ -36,8 +30,8 @@ public class TenantAdminDomainServiceImpl {
     private final AddressMapper addressMapper;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;
-    private final UserTenantRoleService userTenantRoleService;
-    private final RoleRepository roleRepository;
+    private final PersonTenantRepository personTenantRepository;
+    private final UserProvisioningService userProvisioningService;
 
     @Transactional
     public void handleTenantAddress(TenantAdmin entity, TenantAdminDto dto) {
@@ -49,8 +43,8 @@ public class TenantAdminDomainServiceImpl {
         Tenant tenant = entity.getTenant();
 
         if (addressDto.getId() == null) {
-            Address address = addressMapper.toEntity(addressDto);
-            Address savedAddress = addressService.create(address);
+//            Address address = addressMapper.toEntity(addressDto);
+            Address savedAddress = addressService.create(addressDto);
             tenant.setAddressId(savedAddress.getId());
         } else {
             // Security Check (Elite Standard): Confirm the address belongs to this tenant
@@ -61,8 +55,7 @@ public class TenantAdminDomainServiceImpl {
             }
 
             Address existingAddress = addressService.getById(addressDto.getId());
-            addressMapper.updateEntityFromDto(addressDto, existingAddress);
-            addressService.update(addressDto.getId(), existingAddress);
+            addressService.update(addressDto.getId(), addressDto);
             tenant.setAddressId(existingAddress.getId());
         }
     }
@@ -100,37 +93,23 @@ public class TenantAdminDomainServiceImpl {
 
     @Transactional
     public void completeAccountSetup(TenantAdmin savedEntity) {
-        log.info("Configurando cuenta para el administrador: {}", savedEntity.getEmail());
+        log.info("🚀 [DOMAIN] Configurando cuenta via Provisioning para admin: {}",
+                savedEntity.getUser() != null ? savedEntity.getUser().getEmail() : null);
 
-        User user = savedEntity.getUser();
-        user.setPerson(savedEntity);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        // 1. Password encoding (si no se hizo antes)
+        if (savedEntity.getUser() != null && savedEntity.getUser().getPassword() != null 
+                && !savedEntity.getUser().getPassword().startsWith("$2a$")) {
+            savedEntity.getUser().setPassword(passwordEncoder.encode(savedEntity.getUser().getPassword()));
+        }
 
-        // Vinculación Persona-Tenant
-        PersonTenant pt = PersonTenant.builder()
-                .person(savedEntity)
+        // 2. Delegate to Provisioning Service
+        userProvisioningService.provision(ProvisioningRequest.builder()
+                .email(savedEntity.getUser().getEmail())
                 .tenant(savedEntity.getTenant())
                 .roleContext(RoleContext.ADMIN)
-                .relationStatus(RelationStatus.ACTIVE)
-                .dateRegistered(LocalDateTime.now())
-                .build();
-
-        if (savedEntity.getPersonTenants() == null) {
-            savedEntity.setPersonTenants(new HashSet<>());
-        }
-        savedEntity.getPersonTenants().add(pt);
-
-        // Registro de Usuario
-        userRepository.save(user);
-
-        // Asignación de Roles (ADMIN por defecto)
-        Role adminRole = roleRepository.findByName(AppConstants.Roles.ROLE_TENANT_ADMIN)
-                .orElseThrow(() -> new ResourceNotFoundException("Role", "error.role.not_found", AppConstants.Roles.ROLE_TENANT_ADMIN));
-
-        userTenantRoleService.assignRolesToUserAndTenant(
-                user,
-                savedEntity.getTenant(),
-                new HashSet<>(Collections.singletonList(adminRole))
-        );
+                .domainContext(DomainContext.ADMIN)
+                .resolvedPerson(savedEntity.getPerson())
+                .resolvedUser(savedEntity.getUser())
+                .build());
     }
 }

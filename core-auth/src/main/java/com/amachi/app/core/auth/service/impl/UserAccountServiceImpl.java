@@ -4,13 +4,17 @@ import com.amachi.app.core.auth.entity.User;
 import com.amachi.app.core.auth.entity.UserAccount;
 import com.amachi.app.core.auth.repository.UserAccountRepository;
 import com.amachi.app.core.auth.service.UserAccountService;
+import com.amachi.app.core.common.annotation.TenantAware;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
 @Service
+@TenantAware
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class UserAccountServiceImpl implements UserAccountService {
 
     private final UserAccountRepository userAccountRepository;

@@ -12,19 +12,25 @@ import java.time.LocalDateTime;
 @Getter
 public abstract class DomainEvent {
 
-    // 🔥 NEW: Tiempo absoluto del evento
     private final LocalDateTime occurredAt;
-
-    // 🔥 NEW: Contexto del Tenant (Aislamiento en eventos)
-    private final String tenantId;
+    private final Long tenantId;
 
     protected DomainEvent() {
         this.occurredAt = LocalDateTime.now();
-        this.tenantId = TenantContext.getTenant();
+        this.tenantId = resolveTenantId();
     }
 
-    protected DomainEvent(LocalDateTime occurredAt, String tenantId) {
-        this.occurredAt = occurredAt;
+    protected DomainEvent(LocalDateTime occurredAt, Long tenantId) {
+        this.occurredAt = occurredAt != null ? occurredAt : LocalDateTime.now();
         this.tenantId = tenantId;
+    }
+
+    private Long resolveTenantId() {
+        try {
+            return TenantContext.getTenantId();
+        } catch (IllegalStateException ex) {
+            // ✔ GLOBAL context → no tenant
+            return null;
+        }
     }
 }

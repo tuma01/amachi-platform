@@ -1,3 +1,7 @@
+logging:
+  level:
+    org.flywaydb: DEBUG
+
 app:
   bootstrap:
 
@@ -9,14 +13,14 @@ app:
       defaultDomain: localhost
 
       address:
-        numero: "123 DEV"
-        direccion: "Calle Cochabamba DEV"
-        ciudad: "San Borja (DEV)"
+        streetNumber: "123 DEV"
+        streetName: "Calle Cochabamba DEV"
+        city: "San Borja (DEV)"
         municipalityId: 6   # San Borja
         provinceId: 3   # Jose Ballivian
         stateId: 8
-        paisId: 26
-        telefono: "+591 2 1234567"
+        countryId: 26
+        phone: "+591 2 1234567"
 
     # ======================================================
     # SUPER ADMIN GLOBAL – DEV

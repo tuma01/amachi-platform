@@ -9,7 +9,13 @@ import java.util.List;
  * Interface Core para servicios de la aplicación.
  * PUBLIC para ser visible desde todos los módulos (core-geography, etc).
  */
-public interface GenericService<E, F extends BaseSearchDto> {
+/**
+ * Interface Core para servicios de la aplicación (SaaS Elite Tier).
+ * @param <E> Entidad de Dominio
+ * @param <D> DTO / Command de entrada para creación y actualización
+ * @param <F> DTO de Filtros / Búsqueda
+ */
+public interface GenericService<E, D, F extends BaseSearchDto> {
 
     List<E> getAll();
 
@@ -17,9 +23,9 @@ public interface GenericService<E, F extends BaseSearchDto> {
 
     E getById(Long id);
 
-    E create(E entity);
+    E create(D dto);
 
-    E update(Long id, E entity);
+    E update(Long id, D dto);
 
     void delete(Long id);
 }

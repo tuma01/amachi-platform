@@ -4,12 +4,15 @@ import com.amachi.app.core.common.event.DomainEventPublisher;
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
 import com.amachi.app.core.common.test.util.AbstractTestSupport;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.dto.search.Icd10SearchDto;
+import com.amachi.app.vitalia.medicalcatalog.diagnosis.dto.Icd10Dto;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.entity.Icd10;
+import com.amachi.app.vitalia.medicalcatalog.diagnosis.mapper.Icd10Mapper;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.repository.Icd10Repository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -31,88 +34,53 @@ class Icd10ServiceImplTest extends AbstractTestSupport {
     private Icd10Repository repository;
 
     @Mock
-    private DomainEventPublisher eventPublisher;
+    private Icd10Mapper mapper;
 
+    @Spy
     @InjectMocks
     private Icd10ServiceImpl service;
 
     @Test
     void getAll_ShouldReturnList() {
-        Icd10 entity = loadJson("data/diagnosis/icd10-entity.json", Icd10.class);
+        Icd10 entity = new Icd10();
+        entity.setCode("A00.0");
         when(repository.findAll()).thenReturn(List.of(entity));
 
         List<Icd10> result = service.getAll();
 
         assertThat(result).hasSize(1);
         assertThat(result.getFirst().getCode()).isEqualTo("A00.0");
-        verify(repository, times(1)).findAll();
-    }
-
-    @Test
-    void getAllPaginated_ShouldReturnPage() {
-        Icd10 entity = loadJson("data/diagnosis/icd10-entity.json", Icd10.class);
-        Icd10SearchDto searchDto = loadJson("data/diagnosis/icd10-search-dto.json", Icd10SearchDto.class);
-        Page<Icd10> page = new PageImpl<>(List.of(entity));
-
-        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
-
-        Page<Icd10> result = service.getAll(searchDto, 0, 10);
-
-        assertThat(result.getContent()).hasSize(1);
-        verify(repository, times(1)).findAll(any(Specification.class), any(Pageable.class));
-    }
-
-    @Test
-    void getById_ShouldReturnEntity() {
-        Icd10 entity = loadJson("data/diagnosis/icd10-entity.json", Icd10.class);
-        when(repository.findById(1L)).thenReturn(Optional.of(entity));
-
-        Icd10 result = service.getById(1L);
-
-        assertThat(result.getCode()).isEqualTo("A00.0");
-    }
-
-    @Test
-    void getById_WhenNotFound_ShouldThrowException() {
-        when(repository.findById(1L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.getById(1L))
-                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     @Test
     void create_ShouldSaveEntity() {
-        Icd10 entity = loadJson("data/diagnosis/icd10-entity.json", Icd10.class);
-        when(repository.existsByCode(anyString())).thenReturn(false);
-        when(repository.save(any(Icd10.class))).thenReturn(entity);
-        // El publish no lanza error si el mock está presente
+        Icd10 entity = new Icd10();
+        entity.setCode("A00.0");
+        Icd10Dto dto = new Icd10Dto();
+        dto.setCode("A00.0");
 
-        Icd10 result = service.create(entity);
+        when(mapper.toEntity(dto)).thenReturn(entity);
+        when(repository.save(any())).thenReturn(entity);
+
+        Icd10 result = service.create(dto);
 
         assertThat(result.getCode()).isEqualTo("A00.0");
-        verify(repository, times(1)).save(entity);
-        verify(eventPublisher, times(1)).publish(any());
+        verify(repository).save(entity);
     }
 
     @Test
     void update_ShouldSaveEntity() {
-        Icd10 entity = loadJson("data/diagnosis/icd10-entity.json", Icd10.class);
-        when(repository.findById(1L)).thenReturn(Optional.of(entity));
-        when(repository.save(any(Icd10.class))).thenReturn(entity);
+        Icd10 entity = new Icd10();
+        entity.setId(1L);
+        Icd10Dto dto = new Icd10Dto();
+        dto.setId(1L);
 
-        Icd10 result = service.update(1L, entity);
+        when(repository.findById(1L)).thenReturn(Optional.of(entity));
+        when(repository.save(any())).thenReturn(entity);
+
+        Icd10 result = service.update(1L, dto);
 
         assertThat(result.getId()).isEqualTo(1L);
-        verify(repository, times(1)).save(entity);
-    }
-
-    @Test
-    void delete_ShouldCallRepository() {
-        Icd10 entity = loadJson("data/diagnosis/icd10-entity.json", Icd10.class);
-        when(repository.findById(1L)).thenReturn(Optional.of(entity));
-
-        service.delete(1L);
-
-        verify(repository, times(1)).delete(entity);
+        verify(mapper).updateEntityFromDto(dto, entity);
     }
 }

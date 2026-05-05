@@ -1,138 +1,135 @@
 package com.amachi.app.core.auth.config.multiTenant;
 
-import com.amachi.app.core.auth.exception.AppSecurityException;
 import com.amachi.app.core.common.context.TenantContext;
-import com.amachi.app.core.common.i18n.Translator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.UUID;
+import java.util.List;
 
 @Component
-@Slf4j
 public class MultiTenantFilter extends OncePerRequestFilter {
 
-    private final TenantResolver tenantResolver;
-    private final TenantCache tenantCache;
-    private final Translator translator;
+    private static final Logger log = LoggerFactory.getLogger(MultiTenantFilter.class);
+    private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
-    public MultiTenantFilter(TenantResolver tenantResolver,
-                              @Lazy TenantCache tenantCache,
-                              Translator translator) {
+    /**
+     * Rutas que no requieren resolución de tenant:
+     * infraestructura técnica (docs, health) y endpoints globales sin scope de tenant.
+     * Los flujos de auth (/auth/**, /account/**) ya NO están aquí — el subdominio
+     * provee el tenant incluso para peticiones no autenticadas.
+     */
+    private static final List<String> NO_TENANT_PATHS = List.of(
+            "/tenants/**",
+            "/themes/tenant/**",
+            "/public/**",
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html",
+            "/actuator/**"
+    );
+
+    private final TenantResolver tenantResolver;
+
+    public MultiTenantFilter(@Lazy TenantResolver tenantResolver) {
         this.tenantResolver = tenantResolver;
-        this.tenantCache = tenantCache;
-        this.translator = translator;
     }
 
-    @Value("${spring.profiles.active:dev}")
-    private String activeProfile;
+    @Override
+    protected boolean shouldNotFilter(@NonNull HttpServletRequest request) {
+        String path = request.getServletPath();
+        boolean skip = NO_TENANT_PATHS.stream()
+                .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
+        if (skip) {
+            log.debug("⏭️ MultiTenantFilter skipped for: {}", path);
+        }
+        return skip;
+    }
 
     @Override
     protected void doFilterInternal(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         try {
-            // 1️⃣ Resolver tenantCode (fuente única)
-            String tenantCode = tenantResolver.resolveTenant(request);
+            // 1️⃣ Extraer tenantCode desde el subdominio (fuente de verdad en producción)
+            //    Fallback a header X-Tenant-Code en entornos locales de desarrollo
+            String tenantCode = extractTenantCode(request);
 
-            // 2️⃣ Establecer Contexto String para Aislamiento de BD
-            TenantContext.setTenant(tenantCode);
+            if (tenantCode == null || tenantCode.isBlank()) {
+                log.warn("🚨 Tenant no resuelto para: {}", request.getRequestURI());
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST,
+                        "Tenant could not be resolved. Ensure you are using a valid subdomain.");
+                return;
+            }
 
+            // 2️⃣ Resolver TenantId (Long) con caché
+            Long tenantId = tenantResolver.resolveTenantId(tenantCode);
 
-            // 3️⃣ Propagar a request
+            // 3️⃣ Establecer contexto de tenant para aislamiento de BD
+            TenantContext.setTenantId(tenantId);
+            TenantContext.setTenantCode(tenantCode);
+
+            // 4️⃣ Propagar como atributos del request para filtros posteriores
             request.setAttribute("tenantCode", tenantCode);
+            request.setAttribute("tenantId", tenantId);
+
+            log.debug("✅ Tenant context: code={}, id={} — {}", tenantCode, tenantId, request.getRequestURI());
 
             filterChain.doFilter(request, response);
 
-        } catch (AppSecurityException ex) {
-            log.error("❌ Error de tenant: {}", ex.getArgs()[0]);
-            writeErrorResponse(ex, request, response);
-
-        } catch (Exception ex) {
-            log.error("❌ Error inesperado resolviendo tenant", ex);
-            writeGenericError(request, response);
         } finally {
-            // 🧹 LIMPIEZA ABSOLUTA: Evita fugas entre hilos del pool
             TenantContext.clear();
-            log.trace("🧹 TenantContext cleared");
         }
     }
 
-    // ------------------------------------------------------
-    // JSON de error estándar
-    // ------------------------------------------------------
-    private void writeErrorResponse(AppSecurityException ex,
-                                    HttpServletRequest request,
-                                    HttpServletResponse response)
-            throws IOException {
+    /**
+     * Extrae el tenantCode desde el subdominio del host.
+     * Ejemplo: "hospital-san-borja.vitalia.com" → "hospital-san-borja"
+     *
+     * En entornos locales (localhost, 127.0.0.1, redes privadas) usa el header
+     * X-Tenant-Code como fallback para facilitar el desarrollo y las pruebas.
+     */
+    private String extractTenantCode(HttpServletRequest request) {
+        String host = request.getServerName();
 
-        UUID traceId = UUID.randomUUID();
+        if (isLocalEnvironment(host)) {
+            String headerCode = request.getHeader("X-Tenant-Code");
+            log.debug("🛠️ Entorno local (host={}). Usando header X-Tenant-Code: {}", host, headerCode);
+            return headerCode;
+        }
 
-        String userMessage = Translator.toLocale(ex.getKey(), ex.getArgs());
-        String devMessage = Translator.toLocale(ex.getKey() + ".dev", ex.getArgs());
+        // Producción: primer segmento del host es el subdominio
+        int firstDot = host.indexOf('.');
+        if (firstDot > 0) {
+            String subdomain = host.substring(0, firstDot);
+            log.debug("🌐 Subdominio extraído: {} (host: {})", subdomain, host);
+            return subdomain;
+        }
 
-        String json = String.format("""
-            {
-              "success": false,
-              "status": 400,
-              "errors": [{
-                "category": "SECURITY",
-                "code": "%s",
-                "userMessage": "%s",
-                "developerMessage": "%s",
-                "details": {"tenantCode": "%s"},
-                "traceId": "%s"
-              }],
-              "path": "%s",
-              "timestamp": "%s"
-            }
-            """,
-                ex.getErrorCode().getCode(),
-                userMessage,
-                devMessage,
-                ex.getArgs()[0],
-                traceId,
-                request.getRequestURI(),
-                java.time.Instant.now()
-        );
-
-        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-        response.setContentType("application/json");
-        response.getWriter().write(json);
+        log.warn("⚠️ No se pudo extraer subdominio del host: {}", host);
+        return null;
     }
 
-    private void writeGenericError(HttpServletRequest request,
-                                   HttpServletResponse response) throws IOException {
-
-        String json = """
-        {
-          "success": false,
-          "status": 500,
-          "errors": [{
-            "category": "GENERAL",
-            "code": "INTERNAL_ERROR",
-            "userMessage": "Ocurrió un error inesperado",
-            "developerMessage": "Unexpected error processing tenant resolution"
-          }],
-          "path": "%s",
-          "timestamp": "%s"
-        }
-        """.formatted(request.getRequestURI(), java.time.Instant.now());
-
-        response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        response.setContentType("application/json");
-        response.getWriter().write(json);
+    /**
+     * Detecta entornos de desarrollo local por el hostname.
+     * Incluye localhost, IPs de loopback y rangos de red privada (RFC 1918).
+     */
+    private boolean isLocalEnvironment(String host) {
+        return host.equals("localhost")
+                || host.equals("127.0.0.1")
+                || host.startsWith("192.168.")
+                || host.startsWith("10.")
+                || host.startsWith("172.");
     }
 }
-

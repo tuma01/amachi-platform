@@ -30,11 +30,14 @@ public class AllergySpecification implements Specification<Allergy> {
             if (criteria.getCode() != null && !criteria.getCode().isBlank()) {
                 predicates.add(cb.like(cb.lower(root.get("code")), "%" + criteria.getCode().toLowerCase() + "%"));
             }
-            if (criteria.getName() != null && !criteria.getName().isBlank()) {
-                predicates.add(cb.like(cb.lower(root.get("name")), "%" + criteria.getName().toLowerCase() + "%"));
+            if (criteria.getQuery() != null && !criteria.getQuery().isBlank()) {
+                predicates.add(cb.like(cb.lower(root.get("name")), "%" + criteria.getQuery().toLowerCase() + "%"));
             }
-            if (criteria.getActive() != null) {
-                predicates.add(cb.equal(root.get("active"), criteria.getActive()));
+            if (criteria.getType() != null && !criteria.getType().isBlank()) {
+                predicates.add(cb.equal(root.get("type"), criteria.getType()));
+            }
+            if (criteria.getCriticality() != null && !criteria.getCriticality().isBlank()) {
+                predicates.add(cb.equal(root.get("criticality"), criteria.getCriticality()));
             }
         }
 

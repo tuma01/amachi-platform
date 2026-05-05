@@ -1,13 +1,14 @@
 package com.amachi.app.core.management.tenantadmin.entity;
 
 import com.amachi.app.core.auth.entity.User;
-import com.amachi.app.core.common.entity.BaseTenantEntity;
+import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.core.common.enums.TenantAdminLevel;
 import com.amachi.app.core.domain.entity.Person;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import jakarta.persistence.*;
-import lombok.*;
 import lombok.experimental.SuperBuilder;
+import lombok.*;
+
 
 /**
  * Entidad de Gestión de Tenant (SaaS Elite Tier).
@@ -16,15 +17,13 @@ import lombok.experimental.SuperBuilder;
 @Entity
 @Table(name = "MGT_TENANT_ADMIN")
 @Getter
+@SuperBuilder
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@SuperBuilder
-public class TenantAdmin extends BaseTenantEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class TenantAdmin extends AuditableTenantEntity {
+
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ADMIN_LEVEL", nullable = false, length = 50)
@@ -34,7 +33,7 @@ public class TenantAdmin extends BaseTenantEntity {
      * Objeto tenant completo (para lógica de negocio).
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "TENANT_OBJECT_ID", referencedColumnName = "CODE", nullable = false)
+    @JoinColumn(name = "TENANT_ID", insertable = false, updatable = false)
     private Tenant tenant;
 
     /**
@@ -51,8 +50,6 @@ public class TenantAdmin extends BaseTenantEntity {
     @PrePersist
     @PreUpdate
     private void normalizeAdmin() {
-        if (this.tenant != null) {
-            setTenantId(this.tenant.getCode());
-        }
+        // La normalización base es manejada por AuditableTenantEntity
     }
 }

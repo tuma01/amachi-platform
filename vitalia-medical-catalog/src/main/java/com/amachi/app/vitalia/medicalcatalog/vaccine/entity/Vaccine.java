@@ -40,9 +40,9 @@ public class Vaccine extends Auditable<String> implements Model {
     @Column(name = "DESCRIPTION", length = 250)
     private String description;
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

@@ -30,7 +30,6 @@ public interface TenantAdminMapper extends EntityDtoMapper<TenantAdmin, TenantAd
 
         @Override
         @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-        @Mapping(target = "personTenants", source = "personTenantsIds", qualifiedByName = "personTenantSetFromIdsForTenantAdmin")
         @Mapping(target = "createdBy", ignore = true)
         @Mapping(target = "createdDate", ignore = true)
         @Mapping(target = "lastModifiedBy", ignore = true)
@@ -38,7 +37,6 @@ public interface TenantAdminMapper extends EntityDtoMapper<TenantAdmin, TenantAd
         TenantAdmin toEntity(TenantAdminDto dto);
 
         @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, unmappedSourcePolicy = ReportingPolicy.IGNORE)
-        @Mapping(target = "personTenants", source = "personTenantsIds", qualifiedByName = "personTenantSetFromIdsForTenantAdmin")
         @Mapping(target = "id", ignore = true)
         @Mapping(target = "createdBy", ignore = true)
         @Mapping(target = "createdDate", ignore = true)
@@ -48,18 +46,5 @@ public interface TenantAdminMapper extends EntityDtoMapper<TenantAdmin, TenantAd
 
         @Override
         @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
-        // Eliminado mapping a addressId porque no existe en DTO
-        @Mapping(target = "personTenantsIds", source = "personTenants", qualifiedByName = "personTenantSetToIds")
         TenantAdminDto toDto(TenantAdmin entity);
-
-        /**
-         * Establece la relación bidireccional entre TenantAdmin y PersonTenant
-         * para que la FK no sea nula al persistir.
-         */
-        @AfterMapping
-        default void linkPersonTenants(@MappingTarget TenantAdmin entity) {
-                if (entity.getPersonTenants() != null) {
-                        entity.getPersonTenants().forEach(pt -> pt.setPerson(entity));
-                }
-        }
 }

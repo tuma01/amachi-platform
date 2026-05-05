@@ -39,7 +39,7 @@
         <!-- Medical -->
         <dependency>
             <groupId>com.amachi.app.vitalia</groupId>
-            <artifactId>vitalia-medical</artifactId>
+            <artifactId>vitalia-medical-core</artifactId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
@@ -82,7 +82,7 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <optional>true</optional>
+            <scope>provided</scope>
         </dependency>
 
         <!-- MapStruct -->
@@ -95,6 +95,11 @@
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct-processor</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok-mapstruct-binding</artifactId>
             <scope>provided</scope>
         </dependency>
 
@@ -141,5 +146,11 @@
 
     <build>
         <finalName>${project.artifactId}-${project.version}</finalName>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+            </plugin>
+        </plugins>
     </build>
 </project>

@@ -37,17 +37,14 @@ public class MedicalProcedureController extends BaseController implements Medica
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<MedicalProcedureDto> createProcedure(@Valid @RequestBody @NonNull MedicalProcedureDto dto) {
-        MedicalProcedure entity = mapper.toEntity(dto);
-        MedicalProcedure savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        MedicalProcedure savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<MedicalProcedureDto> updateProcedure(@NonNull Long id, @Valid @RequestBody @NonNull MedicalProcedureDto dto) {
-        MedicalProcedure existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        MedicalProcedure savedEntity = service.update(id, existing);
+        MedicalProcedure savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

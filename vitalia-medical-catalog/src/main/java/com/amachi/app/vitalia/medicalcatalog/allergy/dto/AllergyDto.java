@@ -42,6 +42,10 @@ public class AllergyDto implements Serializable {
     @JsonProperty("description")
     @Schema(description = "Detailed Description", example = "Adverse allergic reaction to penicillin")
     private String description;
+    
+    @JsonProperty("criticality")
+    @Schema(description = "Expected severity or criticality level (HIGH, MEDIUM, LOW)", example = "HIGH")
+    private String criticality;
 
     @JsonProperty("active")
     @Schema(description = "Status of the allergy record", example = "true")

@@ -2,15 +2,12 @@ package com.amachi.app.core.auth.dto;
 
 import com.amachi.app.core.common.dto.TokenPairDto;
 import com.amachi.app.core.common.dto.UserSummaryDto;
-
-/**
- * Respuesta del endpoint de autenticación (contenido ligero para el frontend).
- * (Manual Implementation to resolve Lombok resolution issues)
- */
 import lombok.*;
 
 /**
- * Respuesta del endpoint de autenticación (contenido ligero para el frontend).
+ * Authentication response (SaaS Elite Tier).
+ * Clean contract: all token data is inside the 'tokens' object (TokenPairDto).
+ * User identity data is inside the 'user' object (UserSummaryDto).
  */
 @Data
 @Builder
@@ -19,11 +16,4 @@ import lombok.*;
 public class AuthenticationResponse {
     private TokenPairDto tokens;
     private UserSummaryDto user;
-
-    private String accessToken;
-    private String refreshToken;
-    private Long expiresIn;
-    
-    @Builder.Default
-    private String tokenType = "Bearer";
 }

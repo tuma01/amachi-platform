@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
+
 /**
  * Medical Procedure Entity (Global Catalog).
  */
@@ -27,6 +28,7 @@ import lombok.experimental.SuperBuilder;
         @Index(name = "IDX_PROC_CODE", columnList = "CODE")
     }
 )
+
 public class MedicalProcedure extends Auditable<String> implements Model {
 
     @NotBlank(message = "Code {err.mandatory}")
@@ -37,12 +39,12 @@ public class MedicalProcedure extends Auditable<String> implements Model {
     @Column(name = "NAME", nullable = false, length = 500)
     private String name;
 
-    @Column(name = "TYPE", length = 50)
+    @Column(name = "TYPE", nullable = false, length = 50)
     private String type; // e.g., LABORATORY, SURGERY, IMAGING, CONSULTATION
 
+    @Column(name = "IS_ACTIVE", nullable = false)
     @Builder.Default
-    @Column(name = "ACTIVE", nullable = false)
-    private Boolean active = true;
+    private boolean active = true;
 
     @PrePersist
     @PreUpdate

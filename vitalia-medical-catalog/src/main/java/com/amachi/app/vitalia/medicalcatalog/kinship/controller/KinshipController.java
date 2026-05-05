@@ -35,17 +35,14 @@ public class KinshipController extends BaseController implements KinshipApi {
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<KinshipDto> createKinship(@Valid @RequestBody @NonNull KinshipDto dto) {
-        Kinship entity = mapper.toEntity(dto);
-        Kinship savedEntity = service.create(entity);
-        return new ResponseEntity<>(mapper.toDto(savedEntity), HttpStatus.CREATED);
+        Kinship savedEntity = service.create(dto);
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toDto(savedEntity));
     }
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<KinshipDto> updateKinship(@NonNull Long id, @Valid @RequestBody @NonNull KinshipDto dto) {
-        Kinship existing = service.getById(id);
-        mapper.updateEntityFromDto(dto, existing);
-        Kinship savedEntity = service.update(id, existing);
+        Kinship savedEntity = service.update(id, dto);
         return ResponseEntity.ok(mapper.toDto(savedEntity));
     }
 

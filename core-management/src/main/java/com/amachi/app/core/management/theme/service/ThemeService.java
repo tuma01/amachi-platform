@@ -1,5 +1,6 @@
 package com.amachi.app.core.management.theme.service;
 
+import com.amachi.app.core.auth.context.AuthContextHolder;
 import com.amachi.app.core.common.enums.ThemeMode;
 import com.amachi.app.core.common.service.GenericService;
 import com.amachi.app.core.domain.theme.dto.ThemeDto;
@@ -28,64 +29,71 @@ import static com.amachi.app.core.common.utils.AppConstants.ErrorMessages.ENTITY
 import static com.amachi.app.core.common.utils.AppConstants.ErrorMessages.ID_MUST_NOT_BE_NULL;
 import static java.util.Objects.requireNonNull;
 
+import com.amachi.app.core.common.repository.CommonRepository;
+import com.amachi.app.core.common.service.BaseService;
+import com.amachi.app.core.common.event.DomainEventPublisher;
+
 @Service
 @RequiredArgsConstructor
-public class ThemeService implements GenericService<Theme, ThemeSearchDto> {
+public class ThemeService extends BaseService<Theme, ThemeDto, ThemeSearchDto> {
 
     private final ThemeRepository themeRepository;
     private final TenantRepository tenantRepository;
-    private final ThemeMapper themeMapper;
+    private final ThemeMapper mapper;
+    private final DomainEventPublisher eventPublisher;
 
     @Override
-    @Transactional(readOnly = true)
-    public List<Theme> getAll() {
-        return themeRepository.findAllByIsTemplateTrue();
+    protected CommonRepository<Theme, Long> getRepository() {
+        return themeRepository;
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public Page<Theme> getAll(ThemeSearchDto searchDto, Integer pageIndex, Integer pageSize) {
-        Pageable pageable = PageRequest.of(pageIndex, pageSize, Sort.by("createdDate").descending());
-        Specification<Theme> specification = new ThemeSpecification(searchDto);
-        return themeRepository.findAll(specification, pageable);
+    protected Specification<Theme> buildSpecification(ThemeSearchDto searchDto) {
+        return new ThemeSpecification(searchDto);
     }
 
     @Override
-    @Transactional(readOnly = true)
+    protected DomainEventPublisher getEventPublisher() {
+        return eventPublisher;
+    }
+
+    @Override
     public Theme getById(Long id) {
         requireNonNull(id, ID_MUST_NOT_BE_NULL);
         return themeRepository.findById(id)
-                .orElseThrow(
-                        () -> new ResourceNotFoundException(Theme.class.getName(), "error.resource.not.found", id));
+                .orElseThrow(() -> new ResourceNotFoundException("Theme", "error.resource.not.found", id));
+    }
+
+    @Override
+    protected Theme mapToEntity(ThemeDto dto) {
+        return mapper.toEntity(dto);
+    }
+
+    @Override
+    protected void mergeEntities(ThemeDto dto, Theme existing) {
+        mapper.updateEntityFromDto(dto, existing);
+    }
+
+    @Override
+    protected void publishCreatedEvent(Theme entity) {
+        // Future: eventPublisher.publish(new ThemeCreatedEvent(entity));
+    }
+
+    @Override
+    protected void publishUpdatedEvent(Theme entity) {
+        // Future: eventPublisher.publish(new ThemeUpdatedEvent(entity));
     }
 
     @Override
     @Transactional
-    public Theme create(Theme entity) {
-        requireNonNull(entity, ENTITY_MUST_NOT_BE_NULL);
-        return themeRepository.save(entity);
+    public Theme create(ThemeDto dto) {
+        return super.create(dto);
     }
 
     @Override
     @Transactional
-    public Theme update(Long id, Theme entity) {
-        requireNonNull(id, ID_MUST_NOT_BE_NULL);
-        requireNonNull(entity, ENTITY_MUST_NOT_BE_NULL);
-        if (!themeRepository.existsById(id)) {
-            throw new ResourceNotFoundException(Theme.class.getName(), "error.resource.not.found", id);
-        }
-        entity.setId(id);
-        return themeRepository.save(entity);
-    }
-
-    @Override
-    @Transactional
-    public void delete(Long id) {
-        requireNonNull(id, ID_MUST_NOT_BE_NULL);
-        if (!themeRepository.existsById(id)) {
-            throw new ResourceNotFoundException(Theme.class.getName(), "error.resource.not.found", id);
-        }
-        themeRepository.deleteById(id);
+    public Theme update(Long id, ThemeDto dto) {
+        return super.update(id, dto);
     }
 
     @Transactional
@@ -102,10 +110,11 @@ public class ThemeService implements GenericService<Theme, ThemeSearchDto> {
     }
 
     @Transactional(readOnly = true)
-    public ThemeDto getThemeForTenant(String tenantCode) {
+    public ThemeDto getThemeForTenant() {
+        String tenantCode = AuthContextHolder.getTenantCode();
         return tenantRepository.findByCode(tenantCode)
                 .map(com.amachi.app.core.domain.tenant.entity.Tenant::getTheme)
-                .map(themeMapper::toDto)
+                .map(mapper::toDto)
                 .orElseGet(() -> ThemeDto.builder()
                         .name("Default Theme")
                         .primaryColor("#3f51b5")
@@ -118,7 +127,8 @@ public class ThemeService implements GenericService<Theme, ThemeSearchDto> {
     }
 
     @Transactional
-    public ThemeDto upgradeTheme(String tenantCode, ThemeDto dto) {
+    public ThemeDto upgradeTheme(ThemeDto dto) {
+        String tenantCode = AuthContextHolder.getTenantCode();
         // Find tenant and their current theme
         com.amachi.app.core.domain.tenant.entity.Tenant tenant = tenantRepository.findByCode(tenantCode)
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found: " + tenantCode));
@@ -150,7 +160,7 @@ public class ThemeService implements GenericService<Theme, ThemeSearchDto> {
                     .customCss(currentTheme.getCustomCss())
                     .allowCustomCss(currentTheme.isAllowCustomCss())
                     .active(true)
-                    .isTemplate(false) // Clones are not templates
+                    .template(false) // Clones are not templates
                     .build();
 
             // Link tenant to the new private clone
@@ -163,12 +173,13 @@ public class ThemeService implements GenericService<Theme, ThemeSearchDto> {
             themeToUpdate = currentTheme;
         }
 
-        themeMapper.updateEntityFromDto(dto, themeToUpdate);
-        return themeMapper.toDto(themeRepository.save(themeToUpdate));
+        mapper.updateEntityFromDto(dto, themeToUpdate);
+        return mapper.toDto(themeRepository.save(themeToUpdate));
     }
 
     @Transactional
-    public ThemeDto uploadLogo(String tenantCode, MultipartFile file) {
+    public ThemeDto uploadLogo(MultipartFile file) {
+        String tenantCode = AuthContextHolder.getTenantCode();
         com.amachi.app.core.domain.tenant.entity.Tenant tenant = tenantRepository.findByCode(tenantCode)
                 .orElseThrow(() -> new EntityNotFoundException("Tenant not found: " + tenantCode));
 
@@ -186,6 +197,6 @@ public class ThemeService implements GenericService<Theme, ThemeSearchDto> {
         String fakeUrl = "/assets/uploads/" + tenantCode + "/logo_" + java.util.UUID.randomUUID() + ".png";
 
         theme.setLogoUrl(fakeUrl);
-        return themeMapper.toDto(themeRepository.save(theme));
+        return mapper.toDto(themeRepository.save(theme));
     }
 }

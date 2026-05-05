@@ -1,5 +1,7 @@
 package com.amachi.app.core.management.tenantadmin.service.impl;
 
+import com.amachi.app.core.auth.context.AuthContextHolder;
+import com.amachi.app.core.common.annotation.TenantAware;
 import com.amachi.app.core.common.enums.TenantAdminLevel;
 import com.amachi.app.core.common.event.DomainEventPublisher;
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
@@ -20,9 +22,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@TenantAware
 @RequiredArgsConstructor
 @Slf4j
-public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdminSearchDto> implements TenantAdminService {
+public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdmin, TenantAdminSearchDto> implements TenantAdminService {
 
     private final TenantAdminRepository repository;
     private final TenantAdminDomainServiceImpl tenantAdminDomainService;
@@ -32,6 +35,22 @@ public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdmin
     @Override
     protected CommonRepository<TenantAdmin, Long> getRepository() {
         return repository;
+    }
+
+    @Override
+    public TenantAdmin getById(Long id) {
+        if (id == null) {
+            throw new ResourceNotFoundException("TenantAdmin", "error.resource.not.found", null);
+        }
+        
+        // 🛡️ Security Check: Use findByIdAndTenantId if not SuperAdmin
+        if (AuthContextHolder.isSuperAdmin()) {
+            return repository.findById(id)
+                    .orElseThrow(() -> new ResourceNotFoundException("TenantAdmin", "error.resource.not.found", id));
+        }
+
+        return repository.findByIdAndTenantId(id, AuthContextHolder.getTenantId())
+                .orElseThrow(() -> new ResourceNotFoundException("TenantAdmin", "error.resource.not.found", id));
     }
 
     @Override
@@ -45,10 +64,20 @@ public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdmin
     }
 
     @Override
+    protected TenantAdmin mapToEntity(TenantAdmin entity) {
+        return entity;
+    }
+
+    @Override
+    protected void mergeEntities(TenantAdmin dto, TenantAdmin existing) {
+        // En este servicio, la mezcla se realiza externamente o vía domain service
+    }
+
+    @Override
     protected void publishCreatedEvent(TenantAdmin entity) {
         eventPublisher.publish(new TenantAdminCreatedEvent(
                 entity.getId(),
-                entity.getEmail(),
+                entity.getUser() != null ? entity.getUser().getEmail() : null,
                 entity.getTenant() != null ? entity.getTenant().getCode() : null,
                 entity.getAdminLevel()
         ));
@@ -62,6 +91,16 @@ public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdmin
     @Override
     @Transactional
     public TenantAdmin create(TenantAdmin entity) {
+        if (entity == null) {
+            throw new ResourceNotFoundException("TenantAdmin", "error.entity.null", null);
+        }
+
+        // 🛡️ REFUERZO DE TENANT (Punto 4 Auditoría)
+        if (!AuthContextHolder.isSuperAdmin()) {
+            entity.setTenantId(AuthContextHolder.getTenantId());
+            entity.setTenantCode(AuthContextHolder.getTenantCode());
+        }
+
         // Handle existing Tenant attachment
         if (entity.getTenant() != null && entity.getTenant().getId() != null) {
             Tenant existingTenant = tenantRepository.findById(entity.getTenant().getId())
@@ -84,8 +123,7 @@ public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdmin
     @Override
     @Transactional
     public TenantAdmin update(Long id, TenantAdmin entity) {
-        TenantAdmin existingAdmin = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("TenantAdmin", "error.resource.not.found", id));
+        TenantAdmin existingAdmin = getById(id);
 
         // 🛡️ Protection: Cannot downgrade the last LEVEL_1 admin
         if (existingAdmin.getAdminLevel() == TenantAdminLevel.LEVEL_1 && entity.getAdminLevel() != TenantAdminLevel.LEVEL_1) {
@@ -102,8 +140,7 @@ public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdmin
     @Override
     @Transactional
     public void delete(Long id) {
-        TenantAdmin tenantAdmin = repository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("TenantAdmin", "error.resource.not.found", id));
+        TenantAdmin tenantAdmin = getById(id);
 
         // 🛡️ Last Man Standing Protection
         if (tenantAdmin.getAdminLevel() == TenantAdminLevel.LEVEL_1) {

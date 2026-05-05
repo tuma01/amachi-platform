@@ -26,7 +26,7 @@ public class TenantDomainServiceImpl {
         Long addressId;
 
         if (addressDto.getId() == null) {
-            Address address = addressService.create(addressMapper.toEntity(addressDto));
+            Address address = addressService.create(addressDto);
             addressId = address.getId();
         } else {
             addressId = addressDto.getId();
@@ -58,5 +58,4 @@ public class TenantDomainServiceImpl {
         }
         return dto;
     }
-
 }

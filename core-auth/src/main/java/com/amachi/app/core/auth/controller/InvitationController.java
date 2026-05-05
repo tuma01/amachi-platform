@@ -48,8 +48,7 @@ public class InvitationController implements InvitationApi {
      */
     @Override
     public ResponseEntity<InvitationResponse> createInvitation(InvitationRequest request) {
-        log.info("📨 [POST /auth/invitations] Admin inviting email='{}' to tenant='{}'",
-                request.getEmail(), request.getTenantCode());
+        log.info("📨 [POST /auth/invitations] Admin inviting email='{}'", request.getEmail());
         InvitationResponse response = invitationService.createInvitation(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
@@ -86,16 +85,14 @@ public class InvitationController implements InvitationApi {
      */
     @Override
     public ResponseEntity<PageResponseDto<InvitationResponse>> getInvitations(
-            @RequestParam("tenantCode") String tenantCode,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "role", required = false) String role,
             @RequestParam(value = "pageIndex", defaultValue = "0", required = false) Integer pageIndex,
             @RequestParam(value = "pageSize", defaultValue = "10", required = false) Integer pageSize) {
-        
-        log.info("📊 [GET /auth/invitations] Fetching paginated invitations for tenant='{}', status='{}', role='{}'", 
-                tenantCode, status, role);
 
-        Page<InvitationResponse> page = invitationService.getInvitations(tenantCode, status, role, pageIndex, pageSize);
+        log.info("📊 [GET /auth/invitations] Fetching paginated invitations, status='{}', role='{}'", status, role);
+
+        Page<InvitationResponse> page = invitationService.getInvitations(status, role, pageIndex, pageSize);
 
         PageResponseDto<InvitationResponse> response = PageResponseDto.<InvitationResponse>builder()
                 .content(page.getContent())

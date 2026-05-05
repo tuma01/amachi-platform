@@ -1,5 +1,8 @@
 package com.amachi.app.core.auth.service.impl;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import com.amachi.app.core.common.annotation.TenantAware;
 import com.amachi.app.core.auth.bridge.EmailBridge;
 import com.amachi.app.core.auth.bridge.TenantBridge;
 import com.amachi.app.core.auth.dto.invitation.CompleteRegistrationRequest;
@@ -11,15 +14,18 @@ import com.amachi.app.core.auth.enums.InvitationStatus;
 import com.amachi.app.core.auth.exception.AppSecurityException;
 import com.amachi.app.core.auth.repository.*;
 import com.amachi.app.core.auth.service.InvitationService;
+import com.amachi.app.core.auth.specification.UserInvitationSpecification;
+import com.amachi.app.core.common.context.TenantContext;
+import com.amachi.app.core.common.enums.DomainContext;
 import com.amachi.app.core.common.enums.RoleContext;
 import com.amachi.app.core.common.error.ErrorCode;
 import com.amachi.app.core.common.repository.CommonRepository;
 import com.amachi.app.core.common.service.BaseService;
-import com.amachi.app.core.common.service.DomainEventPublisher;
-import com.amachi.app.core.common.utils.ContextMapping;
+import com.amachi.app.core.common.event.DomainEventPublisher;
+import com.amachi.app.core.domain.utils.ContextMapping;
 import com.amachi.app.core.domain.entity.Person;
-import com.amachi.app.core.domain.person.service.IdentityResolutionService;
-import com.amachi.app.core.domain.person.service.PersonContextService;
+import com.amachi.app.core.auth.identity.service.IdentityResolutionService;
+import com.amachi.app.core.domain.context.service.PersonContextService;
 import com.amachi.app.core.domain.repository.PersonRepository;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 import jakarta.persistence.EntityManager;
@@ -41,9 +47,11 @@ import java.util.UUID;
 import java.util.Set;
 
 @Service
+@TenantAware
 @Slf4j
 @RequiredArgsConstructor
-public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvitationSearchDto>
+@Transactional(readOnly = true)
+public class InvitationServiceImpl extends BaseService<UserInvitation, InvitationRequest, UserInvitationSearchDto>
         implements InvitationService {
 
     private final UserInvitationRepository invitationRepository;
@@ -105,20 +113,33 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
     }
 
     @Override
+    protected UserInvitation mapToEntity(InvitationRequest dto) {
+        throw new UnsupportedOperationException("mapToEntity not implemented for InvitationServiceImpl");
+    }
+
+    @Override
+    protected void mergeEntities(InvitationRequest dto, UserInvitation existing) {
+        throw new UnsupportedOperationException("mergeEntities not implemented for InvitationServiceImpl");
+    }
+
+    // =========================================================
+    // BUSINESS
+    // =========================================================
+
+    @Override
     @Transactional
     public InvitationResponse createInvitation(InvitationRequest request) {
-        log.info("📨 Creating invitation for email='{}' role='{}' tenant='{}'",
-                request.getEmail(), request.getRoleName(), request.getTenantCode());
 
-        Tenant tenant = tenantBridge.findByCode(request.getTenantCode());
-        if (Boolean.FALSE.equals(tenant.getIsActive())) {
+        Tenant tenant = tenantBridge.findByCode(TenantContext.getTenantCode());
+
+        if (Boolean.FALSE.equals(tenant.getActive())) {
             throw new AppSecurityException(ErrorCode.SEC_TENANT_DISABLED, "security.tenant.disabled", tenant.getCode());
         }
 
         Role role = roleRepository.findByName(request.getRoleName())
                 .orElseThrow(() -> new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "security.role.not_found", request.getRoleName()));
 
-        if (invitationRepository.existsPendingInvitation(request.getEmail(), request.getTenantCode(), LocalDateTime.now())) {
+        if (invitationRepository.existsPendingInvitation(request.getEmail(), TenantContext.getTenantCode(), LocalDateTime.now())) {
             throw new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "security.invitation.already_pending", request.getEmail());
         }
 
@@ -129,8 +150,8 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
                 .email(request.getEmail())
                 .nationalId(request.getNationalId())
                 .roleContext(request.getRoleContext())
-                .tenant(tenant)
-                .tenantId(tenant.getCode())
+                .tenantId(tenant.getId())
+                .tenantCode(tenant.getCode())
                 .role(role)
                 .token(token)
                 .expiresAt(expiresAt)
@@ -138,10 +159,16 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
                 .build();
 
         invitationRepository.save(invitation);
-        
+
         String activationUrl = frontendBaseUrl + invitationPath + "?token=" + token;
-        emailBridge.sendInvitationEmail(request.getEmail(), tenant.getName(), activationUrl, 
-                request.getFirstName(), request.getLastName());
+
+        emailBridge.sendInvitationEmail(
+                request.getEmail(),
+                tenant.getName(), // ✔ CORREGIDO
+                activationUrl,
+                request.getFirstName(),
+                request.getLastName()
+        );
 
         return toResponse(invitation);
     }
@@ -155,11 +182,10 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
     @Override
     @Transactional
     public void acceptInvitation(CompleteRegistrationRequest request) {
-        log.info("🎉 Accepting invitation phase 1 — loginEmail='{}'", request.getLoginEmail());
 
         UserInvitation invitation = findValidInvitation(request.getToken());
 
-        if (!invitation.getTenant().getCode().equals(request.getTenantCode())) {
+        if (!invitation.getTenantCode().equals(TenantContext.getTenantCode())) {
             throw new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "validation.invitation.tenant.mismatch");
         }
 
@@ -167,11 +193,10 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
             throw new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "validation.email.already_in_use", request.getLoginEmail());
         }
 
-        Tenant tenant = invitation.getTenant();
+        Tenant tenant = tenantBridge.findByCode(invitation.getTenantCode()); // ✔ CORREGIDO
         Role role = invitation.getRole();
         DomainContext domainContext = contextMapping.toDomain(invitation.getRoleContext());
 
-        // 1. Resolve Global Identity
         Person personData = Person.builder()
                 .firstName(request.getFirstName())
                 .middleName(request.getMiddleName())
@@ -182,31 +207,25 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
                 .build();
 
         Person person = identityResolutionService.resolveOrCreateIdentity(
-                invitation.getNationalId(), 
-                invitation.getEmail(), 
+                invitation.getNationalId(),
+                invitation.getEmail(),
                 personData
         );
 
-        // 2. Hardening: Validation of operational identity existence (Elite Rule)
         if (domainContext != null && personContextService.existsActiveContext(person, tenant, domainContext)) {
-            log.warn("⚠️ Operational identity collision: Person {} already has active context {} in Tenant {}", 
-                    person.getId(), domainContext, tenant.getCode());
             throw new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "security.identity.collision", domainContext.name());
         }
 
-        // 3. Create Global Security User linked to Person
         User user = User.builder()
                 .email(request.getLoginEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .enabled(true)
                 .accountLocked(false)
                 .person(person)
-                .tenantId("SYSTEM") // Global users are in SYSTEM context
                 .build();
-        
+
         user = userRepository.save(user);
 
-        // 4. Create Context (PersonTenant + Domain Entity) - Atomic Operation
         personContextService.createContext(
                 person,
                 tenant,
@@ -214,21 +233,24 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
                 domainContext
         );
 
-        // 5. Link User to Tenant (Operational Account)
         UserAccount userAccount = UserAccount.builder()
                 .user(user)
                 .tenant(tenant)
-                .tenantId(tenant.getCode())
+                .tenantCode(tenant.getCode())
                 .person(person)
                 .build();
+
         userAccountRepository.save(userAccount);
 
-        // 6. Assign Security Roles (UX/Navigation)
-        userTenantRoleRepository.assignRolesToUserAndTenant(user.getId(), tenant.getCode(), Set.of(role.getName()));
+        userTenantRoleRepository.assignRolesToUserAndTenant(
+                user.getId(),
+                tenant.getCode(),
+                Set.of(role.getName())
+        );
 
-        // 7. Close Invitation
         invitation.setStatus(InvitationStatus.ACCEPTED);
         invitation.setAcceptedAt(LocalDateTime.now());
+
         invitationRepository.save(invitation);
 
         log.info("✅ Invitation accepted successfully for User: {} in Tenant: {}", user.getEmail(), tenant.getCode());
@@ -236,38 +258,53 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
 
     @Override
     @Transactional(readOnly = true)
-    public Page<InvitationResponse> getInvitations(String tenantCode, String status, String role, Integer pageIndex, Integer pageSize) {
+    public Page<InvitationResponse> getInvitations(String status, String role, Integer pageIndex, Integer pageSize) {
+
         UserInvitationSearchDto searchDto = new UserInvitationSearchDto();
-        searchDto.setTenantCode(tenantCode);
         searchDto.setRoleName(role);
+
         if (status != null && !status.isBlank()) {
-            try { searchDto.setStatus(InvitationStatus.valueOf(status.toUpperCase())); } 
-            catch (IllegalArgumentException ignored) {}
+            try {
+                searchDto.setStatus(InvitationStatus.valueOf(status.toUpperCase()));
+            } catch (IllegalArgumentException ignored) {}
         }
 
         Pageable pageable = PageRequest.of(pageIndex, pageSize, Sort.by(Sort.Direction.DESC, "createdDate"));
-        return invitationRepository.findAll(new UserInvitationSpecification(searchDto), pageable).map(this::toResponse);
+
+        return invitationRepository
+                .findAll(new UserInvitationSpecification(searchDto), pageable)
+                .map(this::toResponse);
     }
 
     @Override
     @Transactional
     public InvitationResponse resendInvitation(Long id) {
-        UserInvitation invitation = invitationRepository.findById(id)
-                .orElseThrow(() -> new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "error.resource.not.found", id.toString()));
+
+        UserInvitation invitation = getById(id);
 
         if (invitation.getStatus() == InvitationStatus.ACCEPTED) {
             throw new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "security.invitation.already_accepted");
         }
 
         String newToken = UUID.randomUUID().toString();
+
         invitation.setToken(newToken);
         invitation.setExpiresAt(LocalDateTime.now().plusHours(tokenTtlHours));
         invitation.setStatus(InvitationStatus.PENDING);
+
         invitationRepository.save(invitation);
 
+        Tenant tenant = tenantBridge.findByCode(invitation.getTenantCode()); // ✔ CORREGIDO
+
         String activationUrl = frontendBaseUrl + invitationPath + "?token=" + newToken;
-        emailBridge.sendInvitationEmail(invitation.getEmail(), invitation.getTenant().getName(), activationUrl, 
-                "Invitado", "");
+
+        emailBridge.sendInvitationEmail(
+                invitation.getEmail(),
+                tenant.getName(),
+                activationUrl,
+                "Invitado",
+                ""
+        );
 
         return toResponse(invitation);
     }
@@ -277,19 +314,25 @@ public class InvitationServiceImpl extends BaseService<UserInvitation, UserInvit
                 .orElseThrow(() -> new AppSecurityException(ErrorCode.SEC_INVALID_TOKEN, "security.invitation.not_found"));
 
         if (!invitation.isValid()) {
-            String reason = invitation.getStatus() == InvitationStatus.ACCEPTED ? "security.invitation.already_accepted" : "security.invitation.expired";
+            String reason = invitation.getStatus() == InvitationStatus.ACCEPTED
+                    ? "security.invitation.already_accepted"
+                    : "security.invitation.expired";
+
             throw new AppSecurityException(ErrorCode.SEC_INVALID_TOKEN, reason);
         }
+
         return invitation;
     }
 
     private InvitationResponse toResponse(UserInvitation invitation) {
+
+        Tenant tenant = tenantBridge.findByCode(invitation.getTenantCode()); // ✔ CORREGIDO
+
         return InvitationResponse.builder()
                 .id(invitation.getId())
                 .email(invitation.getEmail())
                 .roleName(invitation.getRole().getName())
-                .tenantCode(invitation.getTenant().getCode())
-                .tenantName(invitation.getTenant().getName())
+                .tenantName(tenant.getName())
                 .status(invitation.getStatus())
                 .createdAt(invitation.getCreatedDate())
                 .expiresAt(invitation.getExpiresAt())

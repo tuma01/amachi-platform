@@ -1,10 +1,17 @@
 package com.amachi.app.vitalia.medicalcatalog.specialty.service.impl;
 
+import com.amachi.app.core.common.context.TenantContext;
 import com.amachi.app.core.common.event.DomainEventPublisher;
 import com.amachi.app.core.common.test.util.AbstractTestSupport;
+import com.amachi.app.vitalia.medicalcatalog.procedure.dto.MedicalProcedureDto;
+import com.amachi.app.vitalia.medicalcatalog.procedure.entity.MedicalProcedure;
+import com.amachi.app.vitalia.medicalcatalog.specialty.dto.MedicalSpecialtyDto;
 import com.amachi.app.vitalia.medicalcatalog.specialty.dto.search.MedicalSpecialtySearchDto;
 import com.amachi.app.vitalia.medicalcatalog.specialty.entity.MedicalSpecialty;
+import com.amachi.app.vitalia.medicalcatalog.specialty.mapper.MedicalSpecialtyMapper;
 import com.amachi.app.vitalia.medicalcatalog.specialty.repository.MedicalSpecialtyRepository;
+import org.instancio.Instancio;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,7 +26,11 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.mockito.Spy;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,14 +40,23 @@ class MedicalSpecialtyServiceImplTest extends AbstractTestSupport {
     private MedicalSpecialtyRepository repository;
 
     @Mock
+    private MedicalSpecialtyMapper mapper;
+
+    @Mock
     private DomainEventPublisher eventPublisher;
 
     @InjectMocks
     private MedicalSpecialtyServiceImpl service;
 
+    @BeforeEach
+    void setup() {
+        service = spy(service);
+    }
+
     @Test
     void getAll_ShouldReturnList() {
-        MedicalSpecialty entity = loadJson("data/specialty/specialty-entity.json", MedicalSpecialty.class);
+        MedicalSpecialty entity = Instancio.create(MedicalSpecialty.class);
+        entity.setName("Cardiología");
         when(repository.findAll()).thenReturn(List.of(entity));
 
         List<MedicalSpecialty> result = service.getAll();
@@ -47,8 +67,9 @@ class MedicalSpecialtyServiceImplTest extends AbstractTestSupport {
 
     @Test
     void getAllPaginated_ShouldReturnPage() {
-        MedicalSpecialty entity = loadJson("data/specialty/specialty-entity.json", MedicalSpecialty.class);
-        MedicalSpecialtySearchDto searchDto = loadJson("data/specialty/specialty-search-dto.json", MedicalSpecialtySearchDto.class);
+        MedicalSpecialty entity = Instancio.create(MedicalSpecialty.class);
+        entity.setName("Cardiología");
+        MedicalSpecialtySearchDto searchDto = new MedicalSpecialtySearchDto();
         Page<MedicalSpecialty> page = new PageImpl<>(List.of(entity));
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
@@ -60,7 +81,8 @@ class MedicalSpecialtyServiceImplTest extends AbstractTestSupport {
 
     @Test
     void getById_ShouldReturnEntity() {
-        MedicalSpecialty entity = loadJson("data/specialty/specialty-entity.json", MedicalSpecialty.class);
+        MedicalSpecialty entity = Instancio.create(MedicalSpecialty.class);
+        entity.setName("Cardiología");
         when(repository.findById(1L)).thenReturn(Optional.of(entity));
 
         MedicalSpecialty result = service.getById(1L);
@@ -70,11 +92,15 @@ class MedicalSpecialtyServiceImplTest extends AbstractTestSupport {
 
     @Test
     void create_ShouldSave() {
-        MedicalSpecialty entity = loadJson("data/specialty/specialty-entity.json", MedicalSpecialty.class);
-        when(repository.existsByCode(anyString())).thenReturn(false);
-        when(repository.save(any())).thenReturn(entity);
+        MedicalSpecialtyDto dto = Instancio.create(MedicalSpecialtyDto.class);
+        dto.setName("Cardiología");
+        MedicalSpecialty entity = Instancio.create(MedicalSpecialty.class);
+        entity.setName("Cardiología");
 
-        MedicalSpecialty result = service.create(entity);
+        when(repository.save(any())).thenReturn(entity);
+        when(mapper.toEntity(any())).thenReturn(entity);
+
+        MedicalSpecialty result = service.create(dto);
 
         assertThat(result.getName()).isEqualTo("Cardiología");
         verify(eventPublisher, times(1)).publish(any());
@@ -82,22 +108,29 @@ class MedicalSpecialtyServiceImplTest extends AbstractTestSupport {
 
     @Test
     void update_ShouldSave() {
-        MedicalSpecialty entity = loadJson("data/specialty/specialty-entity.json", MedicalSpecialty.class);
+        MedicalSpecialty entity = Instancio.create(MedicalSpecialty.class);
+        entity.setId(1L);
+        MedicalSpecialtyDto dto = Instancio.create(MedicalSpecialtyDto.class);
+        dto.setId(1L);
         when(repository.findById(1L)).thenReturn(Optional.of(entity));
         when(repository.save(any())).thenReturn(entity);
+        doNothing().when(service).mergeEntities(eq(dto), any(MedicalSpecialty.class));
 
-        MedicalSpecialty result = service.update(1L, entity);
+        MedicalSpecialty result = service.update(1L, dto);
 
         assertThat(result.getId()).isEqualTo(1L);
     }
 
     @Test
-    void delete_ShouldCallRepo() {
-        MedicalSpecialty entity = loadJson("data/specialty/specialty-entity.json", MedicalSpecialty.class);
-        when(repository.findById(1L)).thenReturn(Optional.of(entity));
+    void delete_ShouldCallRepoDelete() {
+        MedicalSpecialty entity = Instancio.create(MedicalSpecialty.class);
+        entity.setId(1L);
+
+        when(repository.findById(1L))
+                .thenReturn(Optional.of(entity));
 
         service.delete(1L);
 
-        verify(repository, times(1)).delete(entity);
+        verify(repository).delete(entity);
     }
 }

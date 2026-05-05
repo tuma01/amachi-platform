@@ -11,7 +11,7 @@ import org.mapstruct.*;
 public interface ThemeMapper extends EntityDtoMapper<Theme, ThemeDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreTenantAuditableFields
+    @AuditableIgnoreConfig.IgnoreHybridAuditableFields
     @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
     Theme toEntity(ThemeDto dto);
 
@@ -19,7 +19,7 @@ public interface ThemeMapper extends EntityDtoMapper<Theme, ThemeDto> {
     @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
     ThemeDto toDto(Theme entity);
 
-    @AuditableIgnoreConfig.IgnoreTenantAuditableFields
+    @AuditableIgnoreConfig.IgnoreHybridAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "code", ignore = true)

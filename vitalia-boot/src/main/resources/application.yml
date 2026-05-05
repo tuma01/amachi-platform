@@ -106,3 +106,18 @@ openapi:
     name: Juan Amachi
     email: juan.amachi@gmail.com
     url: https://www.amachi.com
+
+# ==============================
+# LOGGING
+# ==============================
+logging:
+  level:
+    root: INFO
+    # ❌ Silenciar SQL de Hibernate
+    org.hibernate.SQL: WARN
+    org.hibernate.orm.jdbc.bind: WARN
+    org.hibernate.type.descriptor.sql: WARN
+    # ✅ Mantener logs de la app
+    com.amachi: INFO
+    org.springframework.security: WARN
+    org.springframework.web: WARN

@@ -2,6 +2,7 @@ package com.amachi.app.core.auth.repository;
 
 import com.amachi.app.core.auth.entity.User;
 import com.amachi.app.core.common.repository.CommonRepository;
+import com.amachi.app.core.domain.entity.Person;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
@@ -25,7 +26,7 @@ public interface UserRepository extends CommonRepository<User, Long> {
      */
     boolean existsByEmail(String email);
 
-    Optional<User> findByPerson(com.amachi.app.core.domain.entity.Person person);
+    Optional<User> findByPerson(Person person);
 
     // Optional<User> findByResetToken(String resetToken);
 }

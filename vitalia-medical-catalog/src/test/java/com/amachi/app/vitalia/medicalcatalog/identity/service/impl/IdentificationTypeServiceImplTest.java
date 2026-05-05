@@ -1,8 +1,10 @@
 package com.amachi.app.vitalia.medicalcatalog.identity.service.impl;
 
 import com.amachi.app.core.common.event.DomainEventPublisher;
+import com.amachi.app.vitalia.medicalcatalog.identity.dto.IdentificationTypeDto;
 import com.amachi.app.vitalia.medicalcatalog.identity.dto.search.IdentificationTypeSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.identity.entity.IdentificationType;
+import com.amachi.app.vitalia.medicalcatalog.identity.mapper.IdentificationTypeMapper;
 import com.amachi.app.vitalia.medicalcatalog.identity.repository.IdentificationTypeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.util.List;
 import java.util.Optional;
 
+import org.mockito.Spy;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -30,9 +33,13 @@ class IdentificationTypeServiceImplTest {
     private IdentificationTypeRepository repository;
 
     @Mock
+    private IdentificationTypeMapper mapper;
+
+    @Mock
     private DomainEventPublisher eventPublisher;
 
     @InjectMocks
+    @Spy
     private IdentificationTypeServiceImpl service;
 
     private IdentificationType entity;
@@ -71,11 +78,14 @@ class IdentificationTypeServiceImplTest {
 
     @Test
     void create_ShouldReturnEntity() {
+        IdentificationTypeDto dto = new IdentificationTypeDto();
+        dto.setCode("CC");
+        dto.setName("Cédula de Ciudadanía");
         when(repository.existsByCode(anyString())).thenReturn(false);
         when(repository.save(any(IdentificationType.class))).thenReturn(entity);
-        // eventPublisher mock ensures no NPE
+        doReturn(entity).when(service).mapToEntity(dto);
 
-        IdentificationType result = service.create(entity);
+        IdentificationType result = service.create(dto);
 
         assertNotNull(result);
         assertEquals("CC", result.getCode());

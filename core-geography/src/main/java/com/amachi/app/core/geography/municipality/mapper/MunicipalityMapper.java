@@ -11,11 +11,11 @@ import org.mapstruct.*;
 public interface MunicipalityMapper extends EntityDtoMapper<Municipality, MunicipalityDto> {
 
     @Override
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @Mapping(target = "province.id", source = "provinceId")
     Municipality toEntity(MunicipalityDto dto);
 
-    @AuditableIgnoreConfig.IgnoreAuditableFields
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", source = "id", ignore = true)
     @Mapping(target = "province.id", source = "provinceId")

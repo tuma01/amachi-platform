@@ -38,17 +38,19 @@ class TenantDomainServiceImplTest extends AbstractTestSupport {
         void handleTenantAddress_WhenDtoHasAddressWithNoId_ThenCreateAddressAndSetId() {
                 // Arrange
                 Tenant entity = Instancio.create(Tenant.class);
+
                 AddressDto addressDto = Instancio.of(AddressDto.class)
-                                .set(field(AddressDto::getId), null) // Force ID to null for creation logic
-                                .create();
+                        .set(field(AddressDto::getId), null)
+                        .create();
+
                 TenantDto dto = Instancio.of(TenantDto.class)
-                                .set(field(TenantDto::getAddress), addressDto)
-                                .create();
+                        .set(field(TenantDto::getAddress), addressDto)
+                        .create();
 
                 Address createdAddress = Instancio.create(Address.class);
                 Long expectedId = createdAddress.getId();
 
-                when(addressMapper.toEntity(any())).thenReturn(createdAddress);
+                // ✔ Solo esto es necesario
                 when(addressService.create(any())).thenReturn(createdAddress);
 
                 // Act

@@ -1,25 +1,22 @@
 package com.amachi.app.core.management.superadmin.service.impl;
 
-import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.entity.User;
-import com.amachi.app.core.auth.entity.UserAccount;
-import com.amachi.app.core.auth.repository.RoleRepository;
 import com.amachi.app.core.auth.repository.UserRepository;
-import com.amachi.app.core.auth.service.UserTenantRoleService;
-import com.amachi.app.core.domain.config.AppBootstrapProperties;
+import com.amachi.app.core.common.enums.DomainContext;
+import com.amachi.app.core.common.enums.RoleContext;
+import com.amachi.app.core.common.config.AppBootstrapProperties;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
-import com.amachi.app.core.common.utils.AppConstants;
-import com.amachi.app.core.management.superadmin.dto.SuperAdminDto;
-import com.amachi.app.core.management.superadmin.entity.SuperAdmin;
 import com.amachi.app.core.domain.tenant.repository.TenantRepository;
+import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
+import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
+import com.amachi.app.core.management.superadmin.entity.SuperAdmin;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Set;
+import static java.util.Objects.requireNonNull;
 
 @Service
 @Transactional
@@ -28,11 +25,10 @@ import java.util.Set;
 public class SuperAdminDomainServiceImpl {
 
     private final UserRepository userRepository;
-    private final UserTenantRoleService userTenantRoleService;
-    private final RoleRepository roleRepository;
     private final TenantRepository tenantRepository;
     private final PasswordEncoder passwordEncoder;
     private final AppBootstrapProperties appBootstrapProperties;
+    private final UserProvisioningService userProvisioningService;
 
     /**
      * Professional setup of the UserAccount and Roles after the SuperAdmin is
@@ -44,30 +40,25 @@ public class SuperAdminDomainServiceImpl {
         if (savedEntity.getId() == null) {
             throw new IllegalStateException("SuperAdmin must be saved before setting up account.");
         }
+        requireNonNull(savedEntity.getPerson(), "Person is required");
+        requireNonNull(savedEntity.getUser(), "User is required");
 
-        // 2. Fix User person (JPA relation)
-        savedEntity.getUser().setPerson(savedEntity);
-
-        // 3. Find Global Tenant
+        // 2. Find Global Tenant
         String globalTenantCode = appBootstrapProperties.getTenant().getTenantGlobal().getCode();
         Tenant globalTenant = tenantRepository.findByCode(globalTenantCode)
                 .orElseThrow(() -> new IllegalStateException("Global Tenant not found with code: " + globalTenantCode));
 
-        // 4. Create UserAccount (if not exists)
-        UserAccount account = UserAccount.builder()
-                .user(savedEntity.getUser())
+        // 3. Delegate to Provisioning Service (Idempotent)
+        userProvisioningService.provision(ProvisioningRequest.builder()
+                .email(savedEntity.getUser().getEmail())
                 .tenant(globalTenant)
-                .person(savedEntity) // 🟢 Valid person object
-                .build();
-        savedEntity.getUser().getUserAccounts().add(account);
+                .roleContext(RoleContext.SUPER_ADMIN)
+                .domainContext(DomainContext.SUPER_ADMIN)
+                .resolvedPerson(savedEntity.getPerson()) // 🟢 Usamos la entidad ya existente
+                .resolvedUser(savedEntity.getUser())     // 🟢 Usamos la entidad ya existente
+                .build());
 
-        // 5. Update User with new Account and personId
-        userRepository.save(savedEntity.getUser());
-
-        // 6. Assign Roles (SuperAdmin Role)
-        assignSuperAdminRole(savedEntity.getUser(), globalTenant);
-
-        log.info("✔ Account setup completed for SuperAdmin ID: {}", savedEntity.getId());
+        log.info("✔ Account setup (Provisioning) completed for SuperAdmin ID: {}", savedEntity.getId());
     }
 
     // Overloaded to match controller usage directly if passing entity
@@ -79,11 +70,5 @@ public class SuperAdminDomainServiceImpl {
         if (user.getId() == null && user.getPassword() != null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-    }
-
-    private void assignSuperAdminRole(User user, Tenant tenant) {
-        Set<Role> roles = new HashSet<>();
-        roleRepository.findByName(AppConstants.Roles.ROLE_SUPER_ADMIN).ifPresent(roles::add);
-        userTenantRoleService.assignRolesToUserAndTenant(user, tenant, roles);
     }
 }

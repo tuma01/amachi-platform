@@ -23,12 +23,6 @@ public class UserAccountDto {
     @Schema(description = "Person ID", example = "1")
     private Long personId;
 
-    @Schema(description = "ID of the associated Tenant")
-    private Long tenantId;
-
-    @Schema(description = "Code of the associated Tenant", example = "VITALIA-001")
-    private String tenantCode;
-
     @Schema(description = "Tenant name")
     private String tenantName;
 

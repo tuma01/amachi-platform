@@ -1,22 +1,16 @@
 package com.amachi.app.core.common.http;
 
-import lombok.Getter;
-
 import java.util.Optional;
 
 /**
  * Enum completo de códigos HTTP con descripción estándar.
  * Puede usarse en ApiResponse o en cualquier manejo de errores.
  */
-@Getter
 public enum HttpStatusCode {
-
-    // --- 1xx Informational ---
+    // ... (values omitted for brevity in replacement chunk)
     CONTINUE(100, "Continue"),
     SWITCHING_PROTOCOLS(101, "Switching Protocols"),
     PROCESSING(102, "Processing"),
-
-    // --- 2xx Success ---
     OK(200, "OK"),
     CREATED(201, "Created"),
     ACCEPTED(202, "Accepted"),
@@ -27,8 +21,6 @@ public enum HttpStatusCode {
     MULTI_STATUS(207, "Multi-Status"),
     ALREADY_REPORTED(208, "Already Reported"),
     IM_USED(226, "IM Used"),
-
-    // --- 3xx Redirection ---
     MULTIPLE_CHOICES(300, "Multiple Choices"),
     MOVED_PERMANENTLY(301, "Moved Permanently"),
     FOUND(302, "Found"),
@@ -37,8 +29,6 @@ public enum HttpStatusCode {
     USE_PROXY(305, "Use Proxy"),
     TEMPORARY_REDIRECT(307, "Temporary Redirect"),
     PERMANENT_REDIRECT(308, "Permanent Redirect"),
-
-    // --- 4xx Client Errors ---
     BAD_REQUEST(400, "Bad Request"),
     UNAUTHORIZED(401, "Unauthorized"),
     PAYMENT_REQUIRED(402, "Payment Required"),
@@ -68,8 +58,6 @@ public enum HttpStatusCode {
     TOO_MANY_REQUESTS(429, "Too Many Requests"),
     REQUEST_HEADER_FIELDS_TOO_LARGE(431, "Request Header Fields Too Large"),
     UNAVAILABLE_FOR_LEGAL_REASONS(451, "Unavailable For Legal Reasons"),
-
-    // --- 5xx Server Errors ---
     INTERNAL_SERVER_ERROR(500, "Internal Server Error"),
     NOT_IMPLEMENTED(501, "Not Implemented"),
     BAD_GATEWAY(502, "Bad Gateway"),
@@ -90,11 +78,9 @@ public enum HttpStatusCode {
         this.reason = reason;
     }
 
-    /**
-     * Busca el código HTTP de forma segura.
-     * @param code el número de estado HTTP
-     * @return Optional<HttpStatusCode> — vacío si no se encuentra
-     */
+    public int getCode() { return code; }
+    public String getReason() { return reason; }
+
     public static Optional<HttpStatusCode> fromCode(int code) {
         for (HttpStatusCode c : values()) {
             if (c.code == code) {

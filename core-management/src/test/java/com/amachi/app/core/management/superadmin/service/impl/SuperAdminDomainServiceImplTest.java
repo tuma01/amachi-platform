@@ -1,16 +1,15 @@
 package com.amachi.app.core.management.superadmin.service.impl;
 
-import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.entity.User;
-import com.amachi.app.core.auth.repository.RoleRepository;
 import com.amachi.app.core.auth.repository.UserRepository;
-import com.amachi.app.core.auth.service.UserTenantRoleService;
-import com.amachi.app.core.domain.config.AppBootstrapProperties;
-import com.amachi.app.core.domain.tenant.entity.Tenant;
+import com.amachi.app.core.common.config.AppBootstrapProperties;
 import com.amachi.app.core.common.test.util.AbstractTestSupport;
-import com.amachi.app.core.common.utils.AppConstants;
-import com.amachi.app.core.management.superadmin.entity.SuperAdmin;
+import com.amachi.app.core.domain.entity.Person;
+import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.domain.tenant.repository.TenantRepository;
+import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
+import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
+import com.amachi.app.core.management.superadmin.entity.SuperAdmin;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,11 +18,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.HashSet;
 import java.util.Optional;
 
 import static org.instancio.Select.field;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -32,15 +31,13 @@ class SuperAdminDomainServiceImplTest extends AbstractTestSupport {
     @Mock
     private UserRepository userRepository;
     @Mock
-    private UserTenantRoleService userTenantRoleService;
-    @Mock
-    private RoleRepository roleRepository;
-    @Mock
     private TenantRepository tenantRepository;
     @Mock
     private PasswordEncoder passwordEncoder;
     @Mock
     private AppBootstrapProperties appBootstrapProperties;
+    @Mock
+    private UserProvisioningService userProvisioningService;
 
     // Mocks for deep property access
     @Mock
@@ -52,69 +49,59 @@ class SuperAdminDomainServiceImplTest extends AbstractTestSupport {
     private SuperAdminDomainServiceImpl domainService;
 
     @Test
-    void completeAccountSetup_WhenGlobalTenantExists_ThenSetupAccountAndRoles() {
+    void completeAccountSetup_WhenGlobalTenantExists_ThenDelegatesToProvisioning() {
         // Arrange
         SuperAdmin savedEntity = Instancio.create(SuperAdmin.class);
-        // Ensure collections/fields are ready for logic
-        savedEntity.getUser().setUserAccounts(new HashSet<>());
-        savedEntity.setPersonTenants(new HashSet<>());
+        savedEntity.setPerson(Instancio.create(Person.class));
+        savedEntity.setUser(Instancio.create(User.class));
 
         String globalCode = "GLOBAL";
         Tenant globalTenant = Instancio.of(Tenant.class)
                 .set(field(Tenant::getCode), globalCode)
                 .create();
 
-        // 1. Mock Property Chain (Lenient)
-        lenient().when(appBootstrapProperties.getTenant()).thenReturn(tenantProperties);
-        lenient().when(tenantProperties.getTenantGlobal()).thenReturn(tenantGlobal);
-        lenient().when(tenantGlobal.getCode()).thenReturn(globalCode);
-
-        // 2. Mock Repository Lookups
+        when(appBootstrapProperties.getTenant()).thenReturn(tenantProperties);
+        when(tenantProperties.getTenantGlobal()).thenReturn(tenantGlobal);
+        when(tenantGlobal.getCode()).thenReturn(globalCode);
         when(tenantRepository.findByCode(globalCode)).thenReturn(Optional.of(globalTenant));
-
-        Role superAdminRole = new Role();
-        superAdminRole.setId(1L);
-        when(roleRepository.findByName(AppConstants.Roles.ROLE_SUPER_ADMIN)).thenReturn(Optional.of(superAdminRole));
 
         // Act
         domainService.completeAccountSetup(savedEntity);
 
         // Assert
-        User user = savedEntity.getUser();
-        assertEquals(savedEntity.getId(), user.getPersonId()); // Verify ID sync
-        assertFalse(user.getUserAccounts().isEmpty());
-        // Verify Account is linked to Global Tenant
-        assertEquals(globalTenant.getId(), user.getUserAccounts().iterator().next().getTenant().getId());
-
-        verify(userRepository).save(user);
-        verify(userTenantRoleService).assignRolesToUserAndTenant(eq(user), eq(globalTenant), anySet());
+        verify(userProvisioningService).provision(argThat(request -> 
+                request.getEmail().equals(savedEntity.getUser().getEmail()) &&
+                request.getTenant().equals(globalTenant) &&
+                request.getResolvedPerson().equals(savedEntity.getPerson()) &&
+                request.getResolvedUser().equals(savedEntity.getUser())
+        ));
     }
 
     @Test
     void completeAccountSetup_WhenGlobalTenantMissing_ThenThrowException() {
         // Arrange
         SuperAdmin savedEntity = Instancio.create(SuperAdmin.class);
+        savedEntity.setPerson(Instancio.create(Person.class));
+        savedEntity.setUser(Instancio.create(User.class));
+        
         String globalCode = "GLOBAL";
 
-        // 1. Mock Property Chain (Lenient)
-        lenient().when(appBootstrapProperties.getTenant()).thenReturn(tenantProperties);
-        lenient().when(tenantProperties.getTenantGlobal()).thenReturn(tenantGlobal);
-        lenient().when(tenantGlobal.getCode()).thenReturn(globalCode);
-
-        // 2. Mock Repository Lookup (MISSING TENANT)
+        when(appBootstrapProperties.getTenant()).thenReturn(tenantProperties);
+        when(tenantProperties.getTenantGlobal()).thenReturn(tenantGlobal);
+        when(tenantGlobal.getCode()).thenReturn(globalCode);
         when(tenantRepository.findByCode(globalCode)).thenReturn(Optional.empty());
 
         // Act & Assert
         assertThrows(IllegalStateException.class, () -> domainService.completeAccountSetup(savedEntity));
-        verify(userRepository, never()).save(any());
+        verify(userProvisioningService, never()).provision(any());
     }
 
     @Test
-    void encodePasswordIfNeeded_WhenNewUserStarting_ThenEncode() {
+    void encodePasswordIfNeeded_WhenNewUser_ThenEncode() {
         // Arrange
         SuperAdmin entity = Instancio.create(SuperAdmin.class);
         User user = entity.getUser();
-        user.setId(null); // New user
+        user.setId(null); 
         user.setPassword("rawPassword");
 
         when(passwordEncoder.encode("rawPassword")).thenReturn("encodedPassword");

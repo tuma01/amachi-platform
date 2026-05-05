@@ -33,14 +33,14 @@ app:
         # - Puede ser editada luego desde frontend
         # ------------------------------------------------------
         address:
-          numero: "100"
-          direccion: "Calle Cochabamba"
-          ciudad: "San Borja"
+          streetNumber: "100"
+          streetName: "Calle Cochabamba"
+          city: "San Borja"
           municipalityId: 6   # San Borja
           provinceId: 3   # Jose Ballivian
           stateId: 8  # Benu
-          paisId: 26   # Bolivia
-          telefono: "+591 2 1234567"
+          countryId: 26   # Bolivia
+          phone: "+591 2 1234567"
 
     # ======================================================
     # SUPER ADMIN GLOBAL

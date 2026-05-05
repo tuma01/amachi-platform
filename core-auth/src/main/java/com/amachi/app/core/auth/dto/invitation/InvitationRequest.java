@@ -19,9 +19,6 @@ public class InvitationRequest {
     @NotBlank(message = "validation.invitation.role.required")
     private String roleName;
 
-    @NotBlank(message = "validation.invitation.tenant.required")
-    private String tenantCode;
-
     @NotNull(message = "validation.invitation.roleContext.required")
     private RoleContext roleContext;
 
@@ -35,10 +32,9 @@ public class InvitationRequest {
 
     public InvitationRequest() {}
 
-    public InvitationRequest(String email, String roleName, String tenantCode, RoleContext roleContext, String nationalId, String firstName, String lastName) {
+    public InvitationRequest(String email, String roleName, RoleContext roleContext, String nationalId, String firstName, String lastName) {
         this.email = email;
         this.roleName = roleName;
-        this.tenantCode = tenantCode;
         this.roleContext = roleContext;
         this.nationalId = nationalId;
         this.firstName = firstName;
@@ -49,8 +45,6 @@ public class InvitationRequest {
     public void setEmail(String email) { this.email = email; }
     public String getRoleName() { return roleName; }
     public void setRoleName(String roleName) { this.roleName = roleName; }
-    public String getTenantCode() { return tenantCode; }
-    public void setTenantCode(String tenantCode) { this.tenantCode = tenantCode; }
     public RoleContext getRoleContext() { return roleContext; }
     public void setRoleContext(RoleContext roleContext) { this.roleContext = roleContext; }
     public String getNationalId() { return nationalId; }
@@ -67,7 +61,6 @@ public class InvitationRequest {
     public static class InvitationRequestBuilder {
         private String email;
         private String roleName;
-        private String tenantCode;
         private RoleContext roleContext;
         private String nationalId;
         private String firstName;
@@ -75,13 +68,12 @@ public class InvitationRequest {
 
         public InvitationRequestBuilder email(String email) { this.email = email; return this; }
         public InvitationRequestBuilder roleName(String roleName) { this.roleName = roleName; return this; }
-        public InvitationRequestBuilder tenantCode(String tenantCode) { this.tenantCode = tenantCode; return this; }
         public InvitationRequestBuilder roleContext(RoleContext roleContext) { this.roleContext = roleContext; return this; }
         public InvitationRequestBuilder nationalId(String nationalId) { this.nationalId = nationalId; return this; }
         public InvitationRequestBuilder firstName(String firstName) { this.firstName = firstName; return this; }
         public InvitationRequestBuilder lastName(String lastName) { this.lastName = lastName; return this; }
         public InvitationRequest build() {
-            return new InvitationRequest(email, roleName, tenantCode, roleContext, nationalId, firstName, lastName);
+            return new InvitationRequest(email, roleName, roleContext, nationalId, firstName, lastName);
         }
     }
 }
