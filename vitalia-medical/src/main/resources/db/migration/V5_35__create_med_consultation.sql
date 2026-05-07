@@ -1,6 +1,0 @@
--- ============================================================
--- Script: V5_35__create_med_consultation.sql
--- Módulo: vitalia-medical
--- Estado: DEPRECADO / DUPLICADO - Definición consolidada en V5_12
--- ============================================================
--- Se mantiene vacío para preservar el historial de Flyway y evitar conflictos de tabla.

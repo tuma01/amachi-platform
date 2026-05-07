@@ -19,24 +19,31 @@ public interface AppointmentMapper extends EntityDtoMapper<Appointment, Appointm
     @Override
     @AuditableIgnoreConfig.IgnoreTenantAuditableFields
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    @Mapping(target = "patient", ignore = true)
-    @Mapping(target = "doctor", ignore = true)
-//    @Mapping(target = "isDeleted", ignore = true)
+    @Mapping(target = "patient",  ignore = true)
+    @Mapping(target = "doctor",   ignore = true)
+    @Mapping(target = "unit",     ignore = true)
+    @Mapping(target = "room",     ignore = true)
     Appointment toEntity(AppointmentDto dto);
 
     @Override
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
-    @Mapping(target = "patientId", source = "patient.id")
+    @Mapping(target = "patientId",      source = "patient.id")
     @Mapping(target = "patientFullName", expression = "java(entity.getPatient() != null && entity.getPatient().getPerson() != null ? entity.getPatient().getPerson().getFirstName() + \" \" + (entity.getPatient().getPerson().getLastName() != null ? entity.getPatient().getPerson().getLastName() : \"\") : null)")
-    @Mapping(target = "doctorId", source = "doctor.id")
+    @Mapping(target = "doctorId",       source = "doctor.id")
     @Mapping(target = "doctorFullName", expression = "java(entity.getDoctor() != null && entity.getDoctor().getPerson() != null ? entity.getDoctor().getPerson().getFirstName() + \" \" + (entity.getDoctor().getPerson().getLastName() != null ? entity.getDoctor().getPerson().getLastName() : \"\") : null)")
+    @Mapping(target = "unitId",         source = "unit.id")
+    @Mapping(target = "unitName",       source = "unit.name")
+    @Mapping(target = "roomId",         source = "room.id")
+    @Mapping(target = "roomNumber",     source = "room.roomNumber")
     AppointmentDto toDto(Appointment entity);
 
     @Override
     @AuditableIgnoreConfig.IgnoreTenantAuditableFields
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE, unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+                 unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(target = "patient", ignore = true)
-    @Mapping(target = "doctor", ignore = true)
-//    @Mapping(target = "isDeleted", ignore = true)
+    @Mapping(target = "doctor",  ignore = true)
+    @Mapping(target = "unit",    ignore = true)
+    @Mapping(target = "room",    ignore = true)
     void updateEntityFromDto(AppointmentDto dto, @MappingTarget Appointment entity);
 }

@@ -1,6 +1,0 @@
--- ============================================================
--- Script: V5_34__create_med_consultation_type.sql
--- Módulo: vitalia-medical
--- Estado: DEPRECADO / DUPLICADO - Usar V5_11 o CAT_MEDICAL_CONSULTATION_TYPE
--- ============================================================
--- Se mantiene vacío para preservar el historial de Flyway.

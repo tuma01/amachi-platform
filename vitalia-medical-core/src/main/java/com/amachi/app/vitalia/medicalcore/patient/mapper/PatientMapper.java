@@ -17,7 +17,7 @@ public interface PatientMapper extends EntityDtoMapper<Patient, PatientDto> {
 
     @Override
     @AuditableIgnoreConfig.IgnoreTenantAuditableFields
-//    @AuditableIgnoreConfig.IgnoreSoftDelete
+    @Mapping(target = "medicalHistory", ignore = true)
     @Mapping(target = "details.weight", source = "weight")
     @Mapping(target = "details.height", source = "height")
     @Mapping(target = "details.bloodType.id", source = "bloodTypeId")
@@ -31,6 +31,7 @@ public interface PatientMapper extends EntityDtoMapper<Patient, PatientDto> {
     Patient toEntity(PatientDto dto);
 
     @Override
+    @Mapping(target = "medicalHistoryId", source = "medicalHistory.id")
     @Mapping(target = "patientFullName", expression = "java(entity.getPerson() != null ? entity.getPerson().getFirstName() + \" \" + (entity.getPerson().getLastName() != null ? entity.getPerson().getLastName() : \"\") : null)")
     @Mapping(target = "weight", source = "details.weight")
     @Mapping(target = "height", source = "details.height")
@@ -48,6 +49,7 @@ public interface PatientMapper extends EntityDtoMapper<Patient, PatientDto> {
     @Override
     @AuditableIgnoreConfig.IgnoreTenantAuditableFields
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "medicalHistory", ignore = true)
     @Mapping(target = "details.weight", source = "weight")
     @Mapping(target = "details.height", source = "height")
     @Mapping(target = "details.bloodType.id", source = "bloodTypeId")

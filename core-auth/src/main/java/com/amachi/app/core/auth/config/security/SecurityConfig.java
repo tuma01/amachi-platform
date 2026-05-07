@@ -30,7 +30,8 @@ import java.util.List;
 public class SecurityConfig {
 
         private final JwtAuthenticationFilter jwtAuthFilter;
-        private final MultiTenantFilter multiTenantFilter; // Injected
+        private final MultiTenantFilter multiTenantFilter;
+        private final RateLimitFilter rateLimitFilter;
         private final UserDetailsService userDetailsService;
         private final PasswordEncoder passwordEncoder;
         private final LogoutHandler logoutHandler;
@@ -47,56 +48,59 @@ public class SecurityConfig {
                 http
                                 // 🔹 Desactivar CSRF para APIs JWT
                                 .csrf(AbstractHttpConfigurer::disable)
-                                // 🔹 Autorizaciones por endpoint
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(
-                                                                "/auth/**", // login, register, refresh
-                                                                "/account/activate", // Public activation
-                                                                "/account/request-reset-password", // Public reset request
-                                                                "/account/reset-password", // Public reset confirmation
-                                                                "/tenants/**", // Permitir listar tenants públicamente para login
-                                                                "/themes/tenant/**", // Public branding access
-                                                                "/public/**", // healthcheck o documentación
-                                                                "/v3/api-docs/**",
-                                                                "/swagger-ui/**")
-                                                .permitAll()
+                                // 🔹 Autorizaciones por endpoint — bloque unificado
+                                .authorizeHttpRequests(auth -> {
+                                        // Endpoints siempre públicos
+                                        auth.requestMatchers(
+                                                        "/auth/**",
+                                                        "/account/activate",
+                                                        "/account/request-reset-password",
+                                                        "/account/reset-password",
+                                                        "/tenants/**",
+                                                        "/themes/tenant/**",
+                                                        "/public/**")
+                                                .permitAll();
 
-                                                // --- 🔐 ENDPOINTS PROTEGIDOS POR ROL ---
-                                                .requestMatchers("/super-admin/tenants/**",
-                                                                "/super-admin/tenant-admins/**")
-                                                .hasRole("SUPER_ADMIN")
+                                        // Swagger: libre en dev, requiere ADMIN en producción — ISO 27001 A.13.2
+                                        if ("dev".equalsIgnoreCase(activeProfile)) {
+                                                auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll();
+                                        } else {
+                                                auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**")
+                                                        .hasAnyRole("ADMIN", "SUPER_ADMIN");
+                                        }
 
-                                                .requestMatchers(HttpMethod.GET, "/countries/**", "/states/**", "/provinces/**",
+                                        // --- 🔐 ENDPOINTS PROTEGIDOS POR ROL ---
+                                        auth.requestMatchers("/super-admin/tenants/**",
+                                                        "/super-admin/tenant-admins/**")
+                                                .hasRole("SUPER_ADMIN");
+
+                                        auth.requestMatchers(HttpMethod.GET, "/countries/**", "/states/**", "/provinces/**",
                                                         "/municipalities/**", "/addresses/**")
-                                                .authenticated()
+                                                .authenticated();
 
-                                                .requestMatchers(HttpMethod.POST, "/countries/**", "/states/**", "/provinces/**",
+                                        auth.requestMatchers(HttpMethod.POST, "/countries/**", "/states/**", "/provinces/**",
                                                         "/municipalities/**", "/addresses/**")
-                                                .hasRole("SUPER_ADMIN")
+                                                .hasRole("SUPER_ADMIN");
 
-                                                .requestMatchers(HttpMethod.PUT, "/countries/**", "/states/**", "/provinces/**",
+                                        auth.requestMatchers(HttpMethod.PUT, "/countries/**", "/states/**", "/provinces/**",
                                                         "/municipalities/**", "/addresses/**")
-                                                .hasRole("SUPER_ADMIN")
+                                                .hasRole("SUPER_ADMIN");
 
-                                                .requestMatchers(HttpMethod.DELETE, "/countries/**", "/states/**", "/provinces/**",
+                                        auth.requestMatchers(HttpMethod.DELETE, "/countries/**", "/states/**", "/provinces/**",
                                                         "/municipalities/**", "/addresses/**")
-                                                .hasRole("SUPER_ADMIN")
+                                                .hasRole("SUPER_ADMIN");
 
-                                                .requestMatchers("/employee/**").hasRole("ADMIN")
-                                                .requestMatchers("/user/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN")
-                                                .requestMatchers(HttpMethod.GET, "/doctor/**")
-                                                .hasAnyRole("DOCTOR", "ADMIN")
-                                                .requestMatchers(HttpMethod.POST, "/doctor/**").hasRole("DOCTOR")
+                                        auth.requestMatchers("/employee/**").hasRole("ADMIN");
+                                        auth.requestMatchers("/user/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN");
+                                        auth.requestMatchers(HttpMethod.GET, "/doctor/**").hasAnyRole("DOCTOR", "ADMIN");
+                                        auth.requestMatchers(HttpMethod.POST, "/doctor/**").hasRole("DOCTOR");
+                                        auth.requestMatchers("/nurse/**").hasAnyRole("NURSE", "DOCTOR", "ADMIN");
+                                        auth.requestMatchers("/patient/**").hasAnyRole("PATIENT", "DOCTOR", "NURSE", "ADMIN");
+                                        auth.requestMatchers("/tenantConfigs/**").hasAnyRole("ADMIN", "TENANT_ADMIN", "SUPER_ADMIN");
 
-                                                .requestMatchers("/nurse/**").hasAnyRole("NURSE", "DOCTOR", "ADMIN")
-                                                .requestMatchers("/patient/**")
-                                                .hasAnyRole("PATIENT", "DOCTOR", "NURSE", "ADMIN")
-
-                                                .requestMatchers("/tenantConfigs/**")
-                                                .hasAnyRole("ADMIN", "TENANT_ADMIN", "SUPER_ADMIN")
-
-                                                // --- 🔒 CUALQUIER OTRO ENDPOINT REQUIERE AUTENTICACIÓN ---
-                                                .anyRequest().authenticated())
+                                        // --- 🔒 CUALQUIER OTRO ENDPOINT REQUIERE AUTENTICACIÓN ---
+                                        auth.anyRequest().authenticated();
+                                })
                                 // 🔹 Política de sesión sin estado (JWT)
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -104,8 +108,9 @@ public class SecurityConfig {
                                 // 🔹 Provider personalizado
                                 .authenticationProvider(authenticationProvider)
 
-                                .addFilterBefore(multiTenantFilter, UsernamePasswordAuthenticationFilter.class)
-                                .addFilterAfter(jwtAuthFilter, MultiTenantFilter.class);
+                                .addFilterBefore(rateLimitFilter,    UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(multiTenantFilter,  UsernamePasswordAuthenticationFilter.class)
+                                .addFilterBefore(jwtAuthFilter,      UsernamePasswordAuthenticationFilter.class);
 
                 // 🔹 Configuraciones especiales para entorno dev
                 if ("dev".equalsIgnoreCase(activeProfile)) {

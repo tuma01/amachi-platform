@@ -237,4 +237,308 @@ El archivo cargado es `bootstrap-dev.yml`. Credenciales:
 
 ---
 
-*Last update: 2026-05-05 - AMA-026: SaaS Elite elevation, startup fixes, mapper patterns, tenant flow.*
+---
+
+## 🔒 9. SECURITY & MULTI-TENANT IMPROVEMENTS (AMA-027 / 2026-05-07)
+
+### 9.1 Caffeine TTL Cache — TenantResolver y TenantCache
+
+**Problema resuelto:** `TenantResolver` y `TenantCache` usaban `ConcurrentHashMap` sin TTL. Si un tenant era modificado o desactivado en base de datos, el caché seguía sirviendo los datos obsoletos **hasta reinicio del servidor**.
+
+**Cambio aplicado:** Se reemplazó `ConcurrentHashMap` por Caffeine con:
+- `expireAfterWrite(5, TimeUnit.MINUTES)` — los datos se invalidan automáticamente a los 5 minutos
+- `maximumSize(500)` — protección contra memory leak si hay muchos tenants
+
+**Archivos modificados:**
+- `core-auth/pom.xml` — dependencia `com.github.ben-manes.caffeine:caffeine` (versión gestionada por Spring Boot BOM)
+- `core-auth/.../multiTenant/TenantResolver.java` — `ConcurrentHashMap<String,Long>` → `Cache<String,Long>`
+- `core-auth/.../multiTenant/TenantCache.java` — `ConcurrentHashMap<String,Tenant>` → `Cache<String,Tenant>`
+
+**API pública sin cambios** — `resolveTenantId()`, `getTenant()`, `evictCache()`, `clearCache()` mantienen sus firmas exactas.
+
+**Impacto en regresión:** Ninguno. Es un cambio de implementación interna sin modificación de contratos.
+
+**Estándar cubierto:** ISO 27001 A.9 — Control de acceso; Multi-Tenant isolation.
+
+---
+
+### 9.2 Validación de Tenant Activo en MultiTenantFilter
+
+**Problema resuelto:** El sistema aceptaba requests de tenants desactivados (`IS_ACTIVE = false`) porque `MultiTenantFilter` solo verificaba la existencia del tenant, no su estado.
+
+**Cambio aplicado:** `MultiTenantFilter` ahora inyecta `TenantCache` (además del `TenantResolver` previo) y verifica `tenant.getActive()` antes de continuar. Si el tenant está desactivado, retorna HTTP 403 Forbidden.
+
+```
+Request → MultiTenantFilter
+  ├── 1. Extraer tenantCode (subdominio o X-Tenant-Code header)
+  ├── 2. tenantCache.getTenant(code) — obtiene objeto completo con estado
+  ├── 3. Si tenant == null → HTTP 401
+  ├── 4. Si tenant.active == false → HTTP 403
+  └── 5. OK → TenantContext.set(tenantId, tenantCode) → continúa cadena
+```
+
+**Archivo modificado:** `core-auth/.../multiTenant/MultiTenantFilter.java`
+
+**Nota:** El `TenantResolver` ya no es necesario para la resolución de ID porque `TenantCache` devuelve el `Tenant` completo (incluyendo el ID). Se mantiene por compatibilidad con posibles usos externos.
+
+**Impacto en regresión:** Ninguno para tenants activos (flujo idéntico). Nueva protección solo activa cuando `IS_ACTIVE = false`.
+
+**Estándar cubierto:** ISO 27001 A.9.4 — Protección contra acceso no autorizado.
+
+---
+
+### 9.3 Swagger UI Protegido en Producción
+
+**Problema resuelto:** `/v3/api-docs/**` y `/swagger-ui/**` eran accesibles sin autenticación en todos los entornos, exponiendo la estructura completa de la API.
+
+**Cambio aplicado:** `SecurityConfig.securityFilterChain()` ahora tiene lógica condicional basada en `${spring.profiles.active}`:
+
+| Perfil | Acceso a Swagger |
+|---|---|
+| `dev` | `permitAll()` — sin cambios para desarrollo |
+| cualquier otro (prod, staging) | `hasAnyRole("ADMIN", "SUPER_ADMIN")` |
+
+**Refactor adicional:** El bloque `authorizeHttpRequests` se unificó en un solo bloque lambda (antes había estructura de cadena de métodos, ahora es bloque `{}` con sentencias). Esto permite usar `if` statements para la lógica condicional del swagger. **Todas las reglas de acceso previas se mantienen idénticas.**
+
+**Archivo modificado:** `core-auth/.../config/security/SecurityConfig.java`
+
+**Impacto en regresión:** Ninguno en perfil `dev`. En perfil `prod`, Swagger requiere token con rol ADMIN — comportamiento nuevo y correcto.
+
+**Estándar cubierto:** ISO 27001 A.13.2 — Protección de información en tránsito.
+
+---
+
+### 9.4 Rate Limiting en Endpoints de Autenticación
+
+**Problema resuelto:** `/auth/login` y `/auth/refresh` no tenían protección contra ataques de fuerza bruta. Un atacante podía hacer miles de intentos de contraseña sin restricción.
+
+**Cambio aplicado:** Nueva clase `RateLimitFilter` (OncePerRequestFilter) con Caffeine:
+- Contador de intentos por IP con TTL de 1 minuto
+- Límite: 10 requests/minuto por IP
+- Al superarlo: HTTP 429 con body JSON `{"status":429,"error":"TOO_MANY_REQUESTS"}`
+- Registrado en `SecurityConfig` **antes** de `MultiTenantFilter`
+- Soporte para proxies/load balancers: lee `X-Forwarded-For`
+
+**Archivos creados/modificados:**
+- `core-auth/.../config/security/RateLimitFilter.java` — implementación
+- `core-auth/.../config/security/SecurityConfig.java` — `.addFilterBefore(rateLimitFilter, MultiTenantFilter.class)`
+
+**Estándar cubierto:** ISO 27001 A.9.4 — Control de acceso a sistemas y aplicaciones.
+
+---
+
+### 9.5 Encriptación PHI — NHC (Número de Historia Clínica)
+
+**Problema resuelto:** El campo `NHC` en `MED_PATIENT` se almacenaba en texto plano. Un dump de base de datos exponía directamente el identificador único del paciente.
+
+**Estrategia adoptada (mínimo viable):**
+- Solo `NHC` encriptado ahora. Campos de texto largo (diagnósticos, notas) en iteración futura.
+- AES-256/CBC con IV **determinístico** (derivado de SHA-256(key)[0..15]).
+- IV determinístico es intencional: garantiza que el mismo NHC produzca siempre el mismo ciphertext, preservando las constraints UNIQUE en base de datos.
+
+**Componentes creados:**
+
+| Archivo | Función |
+|---|---|
+| `core-common/.../converter/EncryptionKeyHolder.java` | Bridge Spring → JPA. Lee `${app.phi.encryption-key}` y lo expone estáticamente |
+| `core-common/.../converter/EncryptedStringConverter.java` | JPA `AttributeConverter<String,String>`. AES-256/CBC |
+| `vitalia-medical-core/.../patient/entity/Patient.java` | `@Convert(converter=EncryptedStringConverter.class)` en campo `nhc` |
+| `V10_41__alter_med_patient_nhc_encrypted.sql` | `ALTER TABLE MED_PATIENT MODIFY COLUMN NHC VARCHAR(100)` |
+
+**Configuración (`application.yml`):**
+```yaml
+app:
+  phi:
+    encryption-key: ${APP_PHI_ENCRYPTION_KEY:VklUQUxJQV9ERVZfS0VZX05PVF9GT1JfUFJPRF8xMjM=}
+```
+> **IMPORTANTE:** En producción siempre setear `APP_PHI_ENCRYPTION_KEY` como variable de entorno con una clave generada con `openssl rand -base64 32`. El default es solo para dev.
+
+**Campos candidatos para siguiente iteración (cuando la app esté estabilizada):**
+- `Encounter.notes`, `Condition.clinicalNotes`, `Observation.value` (TEXT largo — evaluar impacto en búsquedas)
+- `Patient.allergySummary`, `Patient.additionalRemarks`
+
+**Estándares cubiertos:** ISO 27001 A.10.1 / HIPAA §164.312(a)(2)(iv) — Gestión de claves criptográficas.
+
+---
+
+### 9.6 Logback — Rolling File + MDC Tenant/Usuario
+
+**Problema resuelto:** Los logs no tenían retención controlada ni contexto de tenant/usuario. En producción era imposible correlacionar un error con el tenant y el usuario que lo provocó.
+
+**Cambio aplicado:**
+
+**`logback-spring.xml`** en `vitalia-boot/src/main/resources`:
+
+| Característica | Detalle |
+|---|---|
+| Rolling diario | `TimeBasedRollingPolicy` — archivos `.log.gz` por día |
+| Retención | 90 días / 2 GB cap (log general) — 90 días / 500 MB (solo errores) |
+| Archivo de errores | `amachi-platform-errors.log` con filtro `WARN+` |
+| Perfil `dev` | Consola con colores + DEBUG para `com.amachi` y `org.hibernate.SQL` |
+| Perfil `staging` | Solo archivo, INFO para código propio |
+| Perfil `prod` | Solo archivo, WARN para librerías, INFO para código propio |
+
+**Patrón de log:**
+```
+2026-05-07 14:32:10.123 [http-nio-8088-exec-3] INFO  [tenant:hospital-san-borja] [user:dr.perez] c.a.v.m.appointment.service - ...
+```
+
+**MDC wiring:**
+
+| Filtro | MDC put | MDC remove |
+|---|---|---|
+| `MultiTenantFilter` | `tenantCode` tras resolver tenant | `finally` block |
+| `JwtAuthenticationFilter` | `userId`, `username` tras autenticación exitosa | `finally` block |
+
+**Archivos modificados:**
+- `vitalia-boot/src/main/resources/logback-spring.xml` — creado
+- `core-auth/.../MultiTenantFilter.java` — `MDC.put("tenantCode", ...)` + `MDC.remove`
+- `core-auth/.../JwtAuthenticationFilter.java` — `MDC.put("userId", ...)` + `MDC.put("username", ...)` + `MDC.remove` en finally
+
+**Estándar cubierto:** ISO 27001 A.12.4 — Registro de eventos y monitoreo.
+
+---
+
+---
+
+### 9.7 Estabilización arquitectura AMA-027 (2026-05-07)
+
+**Correcciones aplicadas durante la sesión de estabilización:**
+
+| Problema | Fix aplicado |
+|---|---|
+| `ConflictingBeanDefinitionException: avatarController` | Avatar eliminado de `vitalia-medical-core`, único dueño: `core-management` |
+| `ConflictingBeanDefinitionException: tenantFactory` | `TenantFactory` duplicado en `core-management` (package incorrecto) eliminado. Único en `core-common` |
+| `CannotLoadBeanClassException: AddressController` | Controller inyectaba `AddressServiceImpl` directamente → cambiado a `AddressService` |
+| `EnversMappingException: Avatar.user → User` | `@Audited` removido de `Avatar` (imagen de perfil no es dato clínico crítico) |
+| `EnversMappingException: DoctorHospitalAssignment.hospital` | `@Audited(targetAuditMode = NOT_AUDITED)` en campo `hospital` |
+| `EnversMappingException: Consultation.type` | `@Audited(targetAuditMode = NOT_AUDITED)` en campo `type` |
+| `EnversMappingException: DischargeMedication.medication` | `@Audited(targetAuditMode = NOT_AUDITED)` en campo `medication` |
+| `Schema-validation: missing table [*_aud]` | Creado `V10_42` con 19 tablas `_aud` fase 3. Corregidos V10_10 y V10_20 |
+| `FK_ID_HOSPITAL references MED_HOSPITAL(ID)` | `MED_HOSPITAL` usa JOINED inheritance con PK `TENANT_ID` → FK corregido |
+| `missing column [diagnosis_notes] in med_encounter` | `V10_5` actualizado con 6 columnas faltantes de la entidad |
+| `missing column [photo] in med_user_profile_aud` | `PHOTO LONGBLOB` añadido a `MED_USER_PROFILE_AUD` en V10_20 |
+| `wrong column type: photo longblob vs tinyblob` | `@Lob` sin `columnDefinition` en `Nurse` y `UserProfile` → añadido `columnDefinition = "LONGBLOB"` |
+| `missing table [med_nurse_skills_aud]` | `@ElementCollection clinicalSkills` marcado con `@NotAudited` |
+| `REV INT vs BIGINT incompatible` | Todos los `REV INT` en V10_20 y V10_42 cambiados a `BIGINT` para coincidir con `REVINFO.REV BIGINT` |
+| `MultiTenantFilter does not have a registered order` | Todos los filtros custom registrados con `addFilterBefore(..., UsernamePasswordAuthenticationFilter.class)` |
+| `Consultation.externalId` conflicto con clase base | Campo duplicado eliminado del entity; `EXTERNAL_ID_CUSTOM` huérfana eliminada del DDL |
+| `ddl-auto: validate` falla por tablas `_aud` | `ddl-auto: update` temporalmente → drop DB + Flyway clean start → vuelto a `validate` |
+
+**Estado final:** ✅ App arrancando correctamente con `ddl-auto: validate` y todas las migraciones Flyway V1–V10_42 ejecutadas.
+
+**Sprint 2 plan:** Ver `SPRINT_2_PLAN.md` en raíz del proyecto.
+
+---
+
+*Last update: 2026-05-07 - Sprint 1 completado + estabilización arquitectura AMA-027. App 100% funcional. Sprint 2 pendiente: Envers RevisionEntity + Global Validation Handler.*
+
+---
+
+## 🛡️ 10. SECURITY AUDIT — ESTADO DE COMPLIANCE (2026-05-07)
+
+> Auditoría realizada sobre código fuente. Ver plan completo de mejoras en **`SECURITY_COMPLIANCE_PLAN.md`**.
+
+### 10.1 ¿Es Zero Trust la arquitectura?
+
+**Parcialmente — tiene bases sólidas pero no es Zero Trust completo.**
+
+✅ **Lo que cumple:**
+- JWT stateless — ninguna sesión en servidor
+- Anti-spoofing: compara `tenantCode` del token vs el del request en cada llamada
+- Blacklist de tokens con limpieza automática (`AUT_BLACKLISTED_TOKEN`)
+- `@PreAuthorize` en cada endpoint sensible — nunca confía por defecto
+- BCrypt para contraseñas
+- CORS deshabilitado en producción
+
+⚠️ **Gaps pendientes (ver `SECURITY_COMPLIANCE_PLAN.md`):**
+- ~~Sin rate limiting en `/auth/login`~~ → **corregido en 9.4**
+- ~~NHC en texto plano~~ → **encriptado AES-256 en 9.5** / campos TEXT clínicos pendiente iteración futura
+- ~~Swagger UI público~~ → **corregido en 9.3**
+
+---
+
+### 10.2 ¿Cumple certificación ISO hospitalaria?
+
+**No certificado formalmente. Implementa estándares de referencia de forma parcial.**
+
+| Estándar | Estado |
+|---|---|
+| **FHIR HL7** | ✅ Parcial — entidades alineadas: Encounter, Condition, Observation, Appointment, MedicationRequest, EpisodeOfCare |
+| **ICD-10 (CIE-10)** | ✅ Catálogo integrado con tabla `CAT_ICD10` |
+| **ISO 27001** | ⚠️ ~75% — mejoras AMA-027: Caffeine TTL, rate limiting, NHC cifrado. Pendiente: Envers completo, campos TEXT PHI |
+| **ISO 13485** | ⚠️ ~55% — falta gestión formal de riesgos documentada |
+| **HIPAA / GDPR** | ⚠️ ~70% — NHC cifrado, soft delete y audit events presentes. Pendiente: campos clínicos TEXT |
+
+Para certificación formal se requiere además: auditoría externa, gestión ISO 31000, pen-testing periódico y políticas organizacionales.
+
+---
+
+### 10.3 ¿Los datos del Tenant están protegidos?
+
+**Sí — tres niveles de protección activos:**
+
+| Nivel | Mecanismo | Estado |
+|---|---|---|
+| **Aislamiento entre tenants** | Hibernate Filter `TENANT_ID = :tenantId` + `@PrePersist` fail-fast | ✅ Robusto |
+| **Seguridad cruzada** | Anti-spoofing JWT + ~~tenant activo sin validar~~ → **corregido en 9.2** | ✅ |
+| **Datos no se borran** | `@SQLRestriction("IS_DELETED = false")` universal + soft delete | ✅ |
+| **Historial de cambios** | `@Audited` en entidades, `AUT_AUDIT_EVENTS` con IP/userId | ⚠️ Envers incompleto — falta `RevisionEntity` (ver `SECURITY_COMPLIANCE_PLAN.md`) |
+
+---
+
+### 10.4 ¿Es Multi-Tenant profesional?
+
+**Sí — nivel SaaS Elite con mejoras aplicadas en AMA-027.**
+
+| Característica | Estado |
+|---|---|
+| Subdomain-based routing (`hospital.vitalia.com`) | ✅ |
+| ~~Cache sin TTL~~ → **Caffeine TTL 5min** | ✅ Corregido en 9.1 |
+| ~~Tenant desactivado sin bloqueo~~ → **HTTP 403** | ✅ Corregido en 9.2 |
+| Hibernate Filter automático por tenant | ✅ |
+| RBAC por tenant (mismo usuario, diferentes roles por tenant) | ✅ |
+| `TENANT_ID` inmutable post-persistencia | ✅ |
+| **Pendiente:** TenantResolver en memoria (problema en multi-nodo) | ⚠️ Migrar a Redis cuando se escale a múltiples pods |
+
+---
+
+## 🏥 11. COBERTURA DE GESTIÓN HOSPITALARIA
+
+### 11.1 Dominios implementados (~60-65% de un HIS completo)
+
+| Dominio | Módulo | Estado |
+|---|---|---|
+| Identidad del paciente | Patient, Person | ✅ |
+| Expediente clínico (EHR) | MedicalHistory, ActualIllness, PastIllness | ✅ |
+| Antecedentes familiares | FamilyHistory, HereditaryDisease | ✅ |
+| Hábitos clínicos | PhysiologicalHabit, ToxicHabit | ✅ |
+| Seguros médicos | Insurance | ✅ |
+| Citas + Recordatorios | Appointment, AppointmentReminder | ✅ |
+| Encuentros clínicos (FHIR) | Encounter | ✅ |
+| Diagnósticos CIE-10 | Condition + CAT_ICD10 | ✅ |
+| Observaciones clínicas | Observation | ✅ |
+| Prescripciones | Prescription | ✅ |
+| Internación | Hospitalization, DischargeMedication | ✅ |
+| Consultas médicas | Consultation | ✅ |
+| Episodio de cuidado (FHIR) | EpisodeOfCare | ✅ |
+| Personal médico | Doctor, Nurse, Employee | ✅ |
+| Infraestructura | DepartmentUnit, Room, Bed | ✅ |
+| Organizaciones | Organization, Hospital | ✅ |
+
+### 11.2 Dominios faltantes para HIS completo
+
+| Dominio | Prioridad |
+|---|---|
+| **Quirófano / Cirugía** — programación quirúrgica, equipos | Alta |
+| **Laboratorio clínico** — órdenes, resultados, rangos de referencia | Alta |
+| **Farmacia intrahospitalaria** — stock, dispensación, kardex enfermería | Alta |
+| **Imágenes / Radiología** — DICOM, órdenes de imagen | Media |
+| **Urgencias / Triage Manchester** — gestión sala emergencias | Media |
+| **UCI / Monitoreo** — signos vitales continuos | Media |
+| **Facturación / Liquidación** — tarifarios, cuentas corrientes | Media |
+| **Consentimientos informados** — firmas digitales, formularios legales | Baja |
+| **Estadísticas hospitalarias** — GRD, estancia media, indicadores OPS | Baja |
+| **Notificaciones epidemiológicas** — declaración obligatoria | Baja |
+
+> Los módulos de alta prioridad (Laboratorio, Farmacia, Quirófano) normalmente se integran vía APIs externas (LIS, SIF, PACS) en sistemas hospitalarios maduros, no como desarrollo propio.

@@ -5,14 +5,20 @@ import com.amachi.app.core.common.enums.AppointmentStatus;
 import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 
 import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentSource;
+import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentPriority;
+import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentType;
 import com.amachi.app.vitalia.medicalcore.doctor.entity.Doctor;
 import com.amachi.app.vitalia.medicalcore.encounter.entity.Encounter;
+import com.amachi.app.vitalia.medicalcore.infrastructure.entity.DepartmentUnit;
+import com.amachi.app.vitalia.medicalcore.infrastructure.entity.Room;
 import com.amachi.app.vitalia.medicalcore.patient.entity.Patient;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.envers.Audited;
 
@@ -53,21 +59,22 @@ public class Appointment extends AuditableTenantEntity implements Model {
     @JoinColumn(name = "FK_ID_ENCOUNTER", foreignKey = @ForeignKey(name = "FK_MED_APPOINTMENT_ENCOUNTER"))
     private Encounter encounter;
 
-// Juan: simple implementacion
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "FK_ID_UNIT", foreignKey = @ForeignKey(name = "FK_MED_APP_UNIT"))
-//    private DepartmentUnit unit;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "FK_ID_ROOM", foreignKey = @ForeignKey(name = "FK_MED_APP_ROOM"))
-//    private Room room;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_UNIT", foreignKey = @ForeignKey(name = "FK_MED_APP_UNIT"))
+    private DepartmentUnit unit;
 
-    @Column(name = "APPOINTMENT_TYPE", length = 50)
-    private String type;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_ROOM", foreignKey = @ForeignKey(name = "FK_MED_APP_ROOM"))
+    private Room room;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "APPOINTMENT_TYPE", length = 30)
+    private AppointmentType type;
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "PRIORITY", length = 20)
     @Builder.Default
-    private String priority = "NORMAL";
+    private AppointmentPriority priority = AppointmentPriority.NORMAL;
 
     @Column(name = "REASON", columnDefinition = "TEXT")
     private String reason;
@@ -95,4 +102,8 @@ public class Appointment extends AuditableTenantEntity implements Model {
 
     @Column(name = "LOCKED_BY", length = 100)
     private String lockedBy;
+
+    @OneToMany(mappedBy = "appointment", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<AppointmentReminder> reminders = new ArrayList<>();
 }

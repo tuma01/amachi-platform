@@ -11,6 +11,12 @@ import com.amachi.app.core.common.service.BaseService;
 import com.amachi.app.core.domain.entity.Person;
 import com.amachi.app.core.domain.repository.PersonRepository;
 import com.amachi.app.vitalia.medicalcore.doctor.dto.DoctorDto;
+import com.amachi.app.vitalia.medicalcore.employee.entity.Employee;
+import com.amachi.app.vitalia.medicalcore.employee.repository.EmployeeRepository;
+import com.amachi.app.vitalia.medicalcore.infrastructure.entity.DepartmentUnit;
+import com.amachi.app.vitalia.medicalcore.infrastructure.repository.DepartmentUnitRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import com.amachi.app.vitalia.medicalcore.doctor.dto.search.DoctorSearchDto;
 import com.amachi.app.vitalia.medicalcore.doctor.entity.Doctor;
 import com.amachi.app.vitalia.medicalcore.doctor.event.DoctorCreatedEvent;
@@ -39,6 +45,11 @@ public class DoctorServiceImpl extends BaseService<Doctor, DoctorDto, DoctorSear
     private final DoctorMapper mapper;
     private final DomainEventPublisher eventPublisher;
     private final PersonRepository personRepository;
+    private final DepartmentUnitRepository departmentUnitRepository;
+    private final EmployeeRepository employeeRepository;
+
+    @PersistenceContext
+    private final EntityManager entityManager;
 
     @Override
     protected CommonRepository<Doctor, Long> getRepository() {
@@ -78,7 +89,11 @@ public class DoctorServiceImpl extends BaseService<Doctor, DoctorDto, DoctorSear
             throw new BusinessException("This person already has a doctor profile in this hospital.");
         }
 
-        // 5. Persistencia
+        // 5. Resolver DepartmentUnit y Employee si se enviaron
+        resolveDepartmentUnit(dto.getDepartmentUnitId(), entity, tenantId);
+        resolveEmployee(dto.getEmployeeId(), entity, tenantId);
+
+        // 6. Persistencia
         Doctor saved = repository.save(entity);
         
         // 6. Publicación de Evento
@@ -126,6 +141,32 @@ public class DoctorServiceImpl extends BaseService<Doctor, DoctorDto, DoctorSear
                 existing.setPerson(managedPerson);
             }
         }
+
+        // Resolver cambio de DepartmentUnit y Employee
+        resolveDepartmentUnit(dto.getDepartmentUnitId(), existing, TenantContext.getTenantId());
+        resolveEmployee(dto.getEmployeeId(), existing, TenantContext.getTenantId());
+    }
+
+    private void resolveEmployee(Long employeeId, Doctor doctor, Long tenantId) {
+        if (employeeId == null) {
+            doctor.setEmployee(null);
+            return;
+        }
+        if (!employeeRepository.existsByIdAndTenantId(employeeId, tenantId)) {
+            throw new BusinessException("Empleado no encontrado con ID: " + employeeId);
+        }
+        doctor.setEmployee(entityManager.getReference(Employee.class, employeeId));
+    }
+
+    private void resolveDepartmentUnit(Long deptUnitId, Doctor doctor, Long tenantId) {
+        if (deptUnitId == null) {
+            doctor.setDepartmentUnit(null);
+            return;
+        }
+        if (!departmentUnitRepository.existsByIdAndTenantId(deptUnitId, tenantId)) {
+            throw new BusinessException("Unidad hospitalaria no encontrada con ID: " + deptUnitId);
+        }
+        doctor.setDepartmentUnit(entityManager.getReference(DepartmentUnit.class, deptUnitId));
     }
 
     @Override

@@ -3,6 +3,7 @@ package com.amachi.app.vitalia.medicalcore.encounter.entity;
 import com.amachi.app.core.common.entity.Model;
 import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.entity.Icd10;
+import com.amachi.app.vitalia.medicalcore.medicalhistory.entity.MedicalHistory;
 import com.amachi.app.vitalia.medicalcore.common.enums.ClinicalStatus;
 import com.amachi.app.vitalia.medicalcore.common.enums.ConditionType;
 import com.amachi.app.vitalia.medicalcore.common.enums.Severity;
@@ -87,9 +88,10 @@ public class Condition extends AuditableTenantEntity implements Model {
     @Column(name = "ABATEMENT_DATE")
     private LocalDate abatementDate;
 
-//    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-//    @JoinColumn(name = "FK_ID_MEDICAL_HISTORY", nullable = false, foreignKey = @ForeignKey(name = "FK_MED_COND_HIST"))
-//    private MedicalHistory medicalHistory;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_MEDICAL_HISTORY",
+                foreignKey = @ForeignKey(name = "FK_MED_COND_HIST"))
+    private MedicalHistory medicalHistory;
 
     @PrePersist
     @PreUpdate

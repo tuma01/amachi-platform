@@ -1,7 +1,0 @@
--- ============================================================
--- Script: V5_2__create_med_unit_type.sql
--- Módulo: vitalia-medical
--- NOTA: Este script ha sido DEPRECADO y VACÍADO.
--- La gestión de tipos de unidad se ha centralizado en el módulo 
--- de catálogos (CAT_MEDICAL_UNIT_TYPE).
--- ============================================================

@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <!-- ============================================================
+         VITALIA PLATFORM — Logback Configuration
+         ISO 27001 A.12.4 — Logging and monitoring
+         Retención: 90 días / 2 GB cap
+         MDC disponibles: tenantCode, userId, username
+    ============================================================ -->
+
+    <property name="LOG_PATH"    value="${LOG_PATH:-logs}"/>
+    <property name="APP_NAME"    value="amachi-platform"/>
+
+    <!-- Patrón completo con MDC tenant + usuario -->
+    <property name="LOG_PATTERN"
+              value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [tenant:%X{tenantCode:--}] [user:%X{username:--}] %logger{40} - %msg%n"/>
+
+    <!-- Patrón de consola con colores (solo dev) -->
+    <property name="CONSOLE_PATTERN"
+              value="%d{HH:mm:ss.SSS} %highlight(%-5level) [%cyan(%X{tenantCode:--})] [%yellow(%X{username:--})] %cyan(%logger{35}) - %msg%n"/>
+
+    <!-- ============================================================
+         APPENDER: CONSOLA
+    ============================================================ -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${CONSOLE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- ============================================================
+         APPENDER: ARCHIVO ROLLING (todos los perfiles)
+         Rotación diaria — 90 días / 2 GB máximo total
+    ============================================================ -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}.log</file>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/${APP_NAME}-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============================================================
+         APPENDER: ARCHIVO DE ERRORES (warn+)
+         Útil para alertas en producción sin ruido de INFO/DEBUG
+    ============================================================ -->
+    <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}-errors.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
+            <pattern>${LOG_PATTERN}</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archived/${APP_NAME}-errors-%d{yyyy-MM-dd}.log.gz</fileNamePattern>
+            <maxHistory>90</maxHistory>
+            <totalSizeCap>500MB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- ============================================================
+         PERFIL: dev
+         Nivel DEBUG para código propio, INFO para librerías
+    ============================================================ -->
+    <springProfile name="dev">
+        <logger name="com.amachi" level="DEBUG"/>
+        <logger name="org.springframework.security" level="DEBUG"/>
+        <logger name="org.hibernate.SQL"            level="DEBUG"/>
+        <logger name="org.hibernate.type"           level="WARN"/>
+        <logger name="org.flywaydb"                 level="INFO"/>
+
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="FILE_ERROR"/>
+        </root>
+    </springProfile>
+
+    <!-- ============================================================
+         PERFIL: staging
+         INFO para código propio, sin SQL
+    ============================================================ -->
+    <springProfile name="staging">
+        <logger name="com.amachi"                   level="INFO"/>
+        <logger name="org.springframework.security" level="WARN"/>
+        <logger name="org.hibernate.SQL"            level="WARN"/>
+        <logger name="org.flywaydb"                 level="INFO"/>
+
+        <root level="WARN">
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="FILE_ERROR"/>
+        </root>
+    </springProfile>
+
+    <!-- ============================================================
+         PERFIL: prod (default si no se especifica perfil)
+         Solo WARN+ en librerías, INFO en código propio
+    ============================================================ -->
+    <springProfile name="prod,!dev,!staging">
+        <logger name="com.amachi"                   level="INFO"/>
+        <logger name="org.springframework"          level="WARN"/>
+        <logger name="org.hibernate"                level="WARN"/>
+        <logger name="org.flywaydb"                 level="WARN"/>
+
+        <root level="WARN">
+            <appender-ref ref="FILE"/>
+            <appender-ref ref="FILE_ERROR"/>
+        </root>
+    </springProfile>
+
+</configuration>
