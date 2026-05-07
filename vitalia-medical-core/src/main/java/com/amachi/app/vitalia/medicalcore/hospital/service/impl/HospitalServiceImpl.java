@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-@Getter
+//@Getter
 public class HospitalServiceImpl extends BaseService<Hospital, Hospital, HospitalSearchDto> implements HospitalService {
 
     private final HospitalRepository repository;

@@ -9,6 +9,8 @@ import com.amachi.app.vitalia.medicalcore.common.enums.EncounterType;
 import com.amachi.app.vitalia.medicalcore.doctor.entity.Doctor;
 import com.amachi.app.vitalia.medicalcore.episodeofcare.entity.EpisodeOfCare;
 import com.amachi.app.vitalia.medicalcore.patient.entity.Patient;
+import com.amachi.app.vitalia.medicalcore.medicalhistory.entity.MedicalHistory;
+import com.amachi.app.vitalia.medicalcore.observation.entity.Observation;
 import com.amachi.app.vitalia.medicalcore.prescription.entity.Prescription;
 import jakarta.persistence.*;
 import lombok.*;
@@ -48,13 +50,10 @@ public class Encounter extends AuditableTenantEntity implements Model {
     @JoinColumn(name = "FK_ID_APPOINTMENT", foreignKey = @ForeignKey(name = "FK_ENCOUNTER_APPOINTMENT"))
     private Appointment appointment;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "FK_ID_CONSULTATION_TYPE", foreignKey = @ForeignKey(name = "FK_ENC_CONS_TYPE"))
-//    private MedicalConsultationType consultationType;
-//
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "FK_ID_HISTORY", foreignKey = @ForeignKey(name = "FK_ENC_HISTORY"))
-//    private MedicalHistory medicalHistory;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_HISTORY",
+                foreignKey = @ForeignKey(name = "FK_ENC_HISTORY"))
+    private MedicalHistory medicalHistory;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FK_ID_EPISODEOFCARE", foreignKey = @ForeignKey(name = "FK_ENCOUNTER_EPISODE_OF_CARE"))
@@ -69,28 +68,26 @@ public class Encounter extends AuditableTenantEntity implements Model {
     @Column(name = "ENCOUNTER_TYPE", nullable = false, length = 30)
     private EncounterType encounterType;
 
-//    @Column(name = "TRIAGE_LEVEL", length = 50)
-//    private String triageLevel;
-//
-//
-//
-//    @Column(name = "END_TIME")
-//    private OffsetDateTime endTime;
+    @Column(name = "TRIAGE_LEVEL", length = 50)
+    private String triageLevel;
+
+    @Column(name = "END_TIME")
+    private OffsetDateTime endTime;
 
     @Column(name = "CHIEF_COMPLAINT", columnDefinition = "TEXT")
     private String chiefComplaint;
 
-//    @Column(name = "SYMPTOMS", columnDefinition = "TEXT")
-//    private String symptoms;
-//
-//    @Column(name = "DIAGNOSIS_NOTES", columnDefinition = "TEXT")
-//    private String diagnosisNotes;
-//
-//    @Column(name = "TREATMENT_PLAN", columnDefinition = "TEXT")
-//    private String treatmentPlan;
-//
-//    @Column(name = "RECOMMENDATIONS", columnDefinition = "TEXT")
-//    private String recommendations;
+    @Column(name = "SYMPTOMS", columnDefinition = "TEXT")
+    private String symptoms;
+
+    @Column(name = "DIAGNOSIS_NOTES", columnDefinition = "TEXT")
+    private String diagnosisNotes;
+
+    @Column(name = "TREATMENT_PLAN", columnDefinition = "TEXT")
+    private String treatmentPlan;
+
+    @Column(name = "RECOMMENDATIONS", columnDefinition = "TEXT")
+    private String recommendations;
 
     @Column(name = "CLINICAL_NOTES", columnDefinition = "TEXT")
     private String clinicalNotes;
@@ -105,10 +102,10 @@ public class Encounter extends AuditableTenantEntity implements Model {
     @Builder.Default
     private List<Condition> conditions = new ArrayList<>();
 
-//    @OneToMany(mappedBy = "encounter", cascade = CascadeType.ALL)
-//    @Builder.Default
-//    private List<Observation> observations = new ArrayList<>();
-//
+    @OneToMany(mappedBy = "encounter", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<Observation> observations = new ArrayList<>();
+
     @OneToMany(mappedBy = "encounter", cascade = CascadeType.ALL)
     @Builder.Default
     private List<Prescription> prescriptions = new ArrayList<>();

@@ -79,6 +79,14 @@ security:
 # AVATAR CONFIGURATION
 # ==============================
 app:
+  # PHI Encryption — ISO 27001 A.10.1 / HIPAA §164.312(a)(2)(iv)
+  # Clave AES-256 en Base64 (32 bytes). OBLIGATORIA en producción via variable de entorno.
+  # Generar: openssl rand -base64 32
+  phi:
+    # Valor dev por defecto (base64 de "VITALIA_DEV_KEY_NOT_FOR_PROD_123").
+    # En producción SIEMPRE sobreescribir con variable de entorno APP_PHI_ENCRYPTION_KEY.
+    encryption-key: ${APP_PHI_ENCRYPTION_KEY:VklUQUxJQV9ERVZfS0VZX05PVF9GT1JfUFJPRF8xMjM=}
+
   avatar:
     max-size: 1048576
     allowed-types:
@@ -110,14 +118,8 @@ openapi:
 # ==============================
 # LOGGING
 # ==============================
+# Niveles gestionados por logback-spring.xml (por perfil).
+# Solo se define la ubicación del archivo de log.
 logging:
-  level:
-    root: INFO
-    # ❌ Silenciar SQL de Hibernate
-    org.hibernate.SQL: WARN
-    org.hibernate.orm.jdbc.bind: WARN
-    org.hibernate.type.descriptor.sql: WARN
-    # ✅ Mantener logs de la app
-    com.amachi: INFO
-    org.springframework.security: WARN
-    org.springframework.web: WARN
+  file:
+    path: ${LOG_PATH:logs}

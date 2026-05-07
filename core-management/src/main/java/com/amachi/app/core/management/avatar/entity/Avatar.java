@@ -7,11 +7,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
-import org.hibernate.envers.Audited;
 
 /**
  * Almacenamiento binario y metadata de avatares (SaaS Elite Tier).
  * Ubicada en core-management por ser un recurso transversal de perfil de usuario.
+ * No auditado via Envers — imagen de perfil no es dato clínico ni de acceso crítico.
  */
 @Entity
 @Table(name = "MGT_AVATAR", indexes = {
@@ -25,7 +25,6 @@ import org.hibernate.envers.Audited;
 @SuperBuilder
 @Schema(description = "Gestión de avatares y recursos multimedia — SaaS Elite Tier")
 public class Avatar extends AuditableTenantEntity implements Model {
-
 
     @Column(name = "FILENAME", length = 255)
     private String filename;

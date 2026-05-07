@@ -1,7 +1,0 @@
--- ============================================================
--- Script: V5_11__create_med_consultation_type.sql
--- Módulo: vitalia-medical
--- Estado: DEPRECADO - Usar CAT_MEDICAL_CONSULTATION_TYPE en vitalia-medical-catalog
--- ============================================================
--- Este script se mantiene vacío para preservar el historial de Flyway.
--- La tabla local MED_CONSULTATION_TYPE ha sido eliminada de la arquitectura.

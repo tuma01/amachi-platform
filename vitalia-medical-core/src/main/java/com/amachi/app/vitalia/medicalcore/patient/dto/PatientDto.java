@@ -89,6 +89,9 @@ public class PatientDto {
     @Schema(description = "Dirección del contacto de emergencia", example = "AV. PRINCIPAL 456")
     private String emergencyContactAddress;
 
+    @Schema(description = "ID del expediente clínico vigente (solo lectura)", example = "101", accessMode = Schema.AccessMode.READ_ONLY)
+    private Long medicalHistoryId;
+
     @Schema(description = "Indica si el paciente está activo en el sistema", example = "true")
     private Boolean active;
 

@@ -11,6 +11,7 @@ import com.amachi.app.core.management.avatar.dto.search.AvatarSearchDto;
 import com.amachi.app.core.management.avatar.entity.Avatar;
 import com.amachi.app.core.management.avatar.repository.AvatarRepository;
 import com.amachi.app.core.management.avatar.service.AvatarService;
+import com.amachi.app.core.management.avatar.specification.AvatarSpecification;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
@@ -44,16 +45,7 @@ public class AvatarServiceImpl extends BaseService<Avatar, AvatarDto, AvatarSear
 
     @Override
     protected Specification<Avatar> buildSpecification(AvatarSearchDto searchDto) {
-        return (root, query, cb) -> {
-            var predicates = new java.util.ArrayList<jakarta.persistence.criteria.Predicate>();
-            if (searchDto.getUserId() != null) {
-                predicates.add(cb.equal(root.get("user").get("id"), searchDto.getUserId()));
-            }
-            if (searchDto.getMimeType() != null && !searchDto.getMimeType().isBlank()) {
-                predicates.add(cb.equal(root.get("mimeType"), searchDto.getMimeType()));
-            }
-            return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
-        };
+        return new AvatarSpecification(searchDto);
     }
 
     @Override

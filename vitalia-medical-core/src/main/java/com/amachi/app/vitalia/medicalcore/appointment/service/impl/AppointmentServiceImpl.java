@@ -18,6 +18,10 @@ import com.amachi.app.vitalia.medicalcore.appointment.service.AppointmentService
 import com.amachi.app.vitalia.medicalcore.appointment.specification.AppointmentSpecification;
 import com.amachi.app.vitalia.medicalcore.doctor.entity.Doctor;
 import com.amachi.app.vitalia.medicalcore.doctor.repository.DoctorRepository;
+import com.amachi.app.vitalia.medicalcore.infrastructure.entity.DepartmentUnit;
+import com.amachi.app.vitalia.medicalcore.infrastructure.entity.Room;
+import com.amachi.app.vitalia.medicalcore.infrastructure.repository.DepartmentUnitRepository;
+import com.amachi.app.vitalia.medicalcore.infrastructure.repository.RoomRepository;
 import com.amachi.app.vitalia.medicalcore.patient.entity.Patient;
 import com.amachi.app.vitalia.medicalcore.patient.repository.PatientRepository;
 import jakarta.persistence.EntityManager;
@@ -44,6 +48,8 @@ public class AppointmentServiceImpl extends BaseService<Appointment, Appointment
     private final AppointmentMapper mapper;
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
+    private final DepartmentUnitRepository departmentUnitRepository;
+    private final RoomRepository roomRepository;
     private final DomainEventPublisher eventPublisher;
 
     @PersistenceContext
@@ -57,18 +63,12 @@ public class AppointmentServiceImpl extends BaseService<Appointment, Appointment
         }
 
         Appointment appointment = mapper.toEntity(dto);
-        return create(appointment);
-    }
-
-    @Transactional
-    private Appointment create(Appointment appointment) {
         Long tenantId = TenantContext.getTenantId();
 
         // 1. Validación de cronología
         if (appointment.getStartTime() == null || appointment.getEndTime() == null) {
             throw new BusinessException("StartTime y EndTime son requeridos");
         }
-
         if (appointment.getStartTime().isAfter(appointment.getEndTime())) {
             throw new BusinessException("La hora de inicio debe ser anterior a la de fin");
         }
@@ -77,42 +77,48 @@ public class AppointmentServiceImpl extends BaseService<Appointment, Appointment
         if (appointment.getPatient() == null || appointment.getPatient().getId() == null) {
             throw new BusinessException("Patient is required");
         }
-
         if (appointment.getDoctor() == null || appointment.getDoctor().getId() == null) {
             throw new BusinessException("Doctor is required");
         }
 
         // 3. Resolución segura de Patient
         Long patientId = appointment.getPatient().getId();
-
         if (!patientRepository.existsByIdAndTenantId(patientId, tenantId)) {
             throw new BusinessException("Paciente no encontrado con ID: " + patientId);
         }
-
         appointment.setPatient(entityManager.getReference(Patient.class, patientId));
 
         // 4. Resolución segura de Doctor + conflicto de agenda
         Long doctorId = appointment.getDoctor().getId();
-
         if (!doctorRepository.existsByIdAndTenantId(doctorId, tenantId)) {
             throw new BusinessException("Doctor no encontrado con ID: " + doctorId);
         }
-
         appointment.setDoctor(entityManager.getReference(Doctor.class, doctorId));
 
         boolean conflict = repository
                 .existsByDoctorIdAndTenantIdAndStartTimeLessThanAndEndTimeGreaterThan(
-                        doctorId,
-                        tenantId,
-                        appointment.getEndTime(),
-                        appointment.getStartTime()
-                );
-
+                        doctorId, tenantId, appointment.getEndTime(), appointment.getStartTime());
         if (conflict) {
             throw new BusinessException("Doctor already has an appointment in this time range");
         }
 
-        // 5. Estado inicial
+        // 5. Resolver DepartmentUnit (opcional)
+        if (dto.getUnitId() != null) {
+            if (!departmentUnitRepository.existsByIdAndTenantId(dto.getUnitId(), tenantId)) {
+                throw new BusinessException("Unidad hospitalaria no encontrada con ID: " + dto.getUnitId());
+            }
+            appointment.setUnit(entityManager.getReference(DepartmentUnit.class, dto.getUnitId()));
+        }
+
+        // 6. Resolver Room (opcional)
+        if (dto.getRoomId() != null) {
+            if (!roomRepository.existsByIdAndTenantId(dto.getRoomId(), tenantId)) {
+                throw new BusinessException("Habitación no encontrada con ID: " + dto.getRoomId());
+            }
+            appointment.setRoom(entityManager.getReference(Room.class, dto.getRoomId()));
+        }
+
+        // 7. Estado inicial
         appointment.setStatus(AppointmentStatus.SCHEDULED);
 
         return repository.save(appointment);

@@ -1,9 +1,11 @@
 package com.amachi.app.vitalia.medicalcore.patient.entity;
 
+import com.amachi.app.core.common.converter.EncryptedStringConverter;
 import com.amachi.app.core.common.entity.Model;
 import com.amachi.app.core.common.enums.PatientStatus;
 import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.core.domain.entity.Person;
+import com.amachi.app.vitalia.medicalcore.medicalhistory.entity.MedicalHistory;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -29,7 +31,8 @@ public class Patient extends AuditableTenantEntity implements Model {
     @JoinColumn(name = "FK_ID_PERSON", nullable = false, foreignKey = @ForeignKey(name = "FK_PATIENT_PERSON"))
     private Person person;
 
-    @Column(name = "NHC", unique = true, nullable = false, length = 50)
+    @Convert(converter = EncryptedStringConverter.class)
+    @Column(name = "NHC", unique = true, nullable = false, length = 100)
     private String nhc;
 
     @Column(name = "IDENTIFICATION_NUMBER", length = 50)
@@ -85,9 +88,10 @@ public class Patient extends AuditableTenantEntity implements Model {
     @Embedded
     private PatientDetails details;
 
-//    @OneToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "FK_ID_MEDICAL_HISTORY", foreignKey = @ForeignKey(name = "FK_MED_PAT_HIST"))
-//    private MedicalHistory medicalHistory;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_MEDICAL_HISTORY",
+                foreignKey = @ForeignKey(name = "FK_MED_PAT_HIST"))
+    private MedicalHistory medicalHistory;
 
     @PrePersist
     @PreUpdate

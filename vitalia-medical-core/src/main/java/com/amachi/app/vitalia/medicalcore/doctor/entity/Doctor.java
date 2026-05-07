@@ -2,6 +2,9 @@ package com.amachi.app.vitalia.medicalcore.doctor.entity;
 import com.amachi.app.core.common.entity.Model;
 import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.core.domain.entity.Person;
+import com.amachi.app.vitalia.medicalcore.common.enums.DoctorAvailabilityStatus;
+import com.amachi.app.vitalia.medicalcore.employee.entity.Employee;
+import com.amachi.app.vitalia.medicalcore.infrastructure.entity.DepartmentUnit;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
@@ -42,13 +45,19 @@ public class Doctor extends AuditableTenantEntity implements Model {
     @Column(name = "BIO", columnDefinition = "TEXT")
     private String bio;
 
-//    @ManyToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "FK_ID_DEPT_UNIT", foreignKey = @ForeignKey(name = "FK_MED_DR_DEPT"))
-//    private DepartmentUnit departmentUnit;
-//
-//    @OneToOne(fetch = FetchType.LAZY)
-//    @JoinColumn(name = "FK_ID_EMPLOYEE", foreignKey = @ForeignKey(name = "FK_MED_DR_EMP"))
-//    private Employee employee;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_DEPT_UNIT", foreignKey = @ForeignKey(name = "FK_MED_DR_DEPT"))
+    private DepartmentUnit departmentUnit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "AVAILABILITY_STATUS", length = 30)
+    @Builder.Default
+    private DoctorAvailabilityStatus availabilityStatus = DoctorAvailabilityStatus.AVAILABLE;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_EMPLOYEE",
+                foreignKey = @ForeignKey(name = "FK_MED_DR_EMP"))
+    private Employee employee;
 
     @Column(name = "CONSULTATION_PRICE", precision = 12, scale = 2)
     private BigDecimal consultationPrice;

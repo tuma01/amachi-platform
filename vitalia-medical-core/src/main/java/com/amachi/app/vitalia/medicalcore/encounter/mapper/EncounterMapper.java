@@ -20,22 +20,22 @@ public interface EncounterMapper extends EntityDtoMapper<Encounter, EncounterDto
     @AuditableIgnoreConfig.IgnoreTenantAuditableFields
     @Mapping(target = "patient.id",        source = "patientId")
     @Mapping(target = "doctor.id",         source = "doctorId")
-//    @Mapping(target = "medicalHistory.id",  source = "medicalHistoryId")
-    @Mapping(target = "appointment.id",     source = "appointmentId")
-    @Mapping(target = "episodeOfCare.id",   source = "episodeOfCareId")
-//    @Mapping(target = "consultationType.id", source = "consultationTypeId")
-//    @Mapping(target = "isDeleted",          ignore = true)
+    @Mapping(target = "appointment.id",    source = "appointmentId")
+    @Mapping(target = "episodeOfCare.id",  source = "episodeOfCareId")
+    @Mapping(target = "medicalHistory.id", source = "medicalHistoryId")
+    @Mapping(target = "observations",      ignore = true)
+    @Mapping(target = "conditions",        ignore = true)
+    @Mapping(target = "prescriptions",     ignore = true)
     Encounter toEntity(EncounterDto dto);
 
     @Override
-    @Mapping(target = "patientId",         source = "patient.id")
-    @Mapping(target = "patientFullName", expression = "java(entity.getPatient() != null && entity.getPatient().getPerson() != null ? entity.getPatient().getPerson().getFirstName() + \" \" + entity.getPatient().getPerson().getLastName() : null)")
-    @Mapping(target = "doctorId",          source = "doctor.id")
-    @Mapping(target = "doctorFullName", expression = "java(entity.getDoctor() != null && entity.getDoctor().getPerson() != null ? entity.getDoctor().getPerson().getFirstName() + \" \" + entity.getDoctor().getPerson().getLastName() : null)")
-    @Mapping(target = "appointmentId",     source = "appointment.id")
-//    @Mapping(target = "medicalHistoryId",  source = "medicalHistory.id")
-    @Mapping(target = "episodeOfCareId",   source = "episodeOfCare.id")
-//    @Mapping(target = "consultationTypeId", source = "consultationType.id")
+    @Mapping(target = "patientId",        source = "patient.id")
+    @Mapping(target = "patientFullName",  expression = "java(entity.getPatient() != null && entity.getPatient().getPerson() != null ? entity.getPatient().getPerson().getFirstName() + \" \" + entity.getPatient().getPerson().getLastName() : null)")
+    @Mapping(target = "doctorId",         source = "doctor.id")
+    @Mapping(target = "doctorFullName",   expression = "java(entity.getDoctor() != null && entity.getDoctor().getPerson() != null ? entity.getDoctor().getPerson().getFirstName() + \" \" + entity.getDoctor().getPerson().getLastName() : null)")
+    @Mapping(target = "appointmentId",    source = "appointment.id")
+    @Mapping(target = "medicalHistoryId", source = "medicalHistory.id")
+    @Mapping(target = "episodeOfCareId",  source = "episodeOfCare.id")
     EncounterDto toDto(Encounter entity);
 
     @Override
@@ -43,11 +43,12 @@ public interface EncounterMapper extends EntityDtoMapper<Encounter, EncounterDto
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "patient.id",        source = "patientId")
     @Mapping(target = "doctor.id",         source = "doctorId")
-//    @Mapping(target = "medicalHistory.id",  source = "medicalHistoryId")
-    @Mapping(target = "appointment.id",     source = "appointmentId")
-    @Mapping(target = "episodeOfCare.id",   source = "episodeOfCareId")
-//    @Mapping(target = "consultationType.id", source = "consultationTypeId")
-//    @Mapping(target = "isDeleted",          ignore = true)
+    @Mapping(target = "appointment.id",    source = "appointmentId")
+    @Mapping(target = "episodeOfCare.id",  source = "episodeOfCareId")
+    @Mapping(target = "medicalHistory.id", source = "medicalHistoryId")
+    @Mapping(target = "observations",      ignore = true)
+    @Mapping(target = "conditions",        ignore = true)
+    @Mapping(target = "prescriptions",     ignore = true)
     void updateEntityFromDto(EncounterDto dto, @MappingTarget Encounter entity);
 
     @ValueMappings({

@@ -1,7 +1,0 @@
--- ============================================================
--- Script: V5_36__create_med_staff_specialities.sql
--- Módulo: vitalia-medical
--- NOTA: Este script ha sido DEPRECADO y VACÍADO.
--- La gestión de especialidades profesionales se ha centralizado
--- en el módulo de catálogos (CAT_MEDICAL_SPECIALTY).
--- ============================================================

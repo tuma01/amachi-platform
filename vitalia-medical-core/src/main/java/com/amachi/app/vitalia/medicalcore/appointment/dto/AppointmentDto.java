@@ -1,7 +1,9 @@
 package com.amachi.app.vitalia.medicalcore.appointment.dto;
 
 import com.amachi.app.core.common.enums.AppointmentStatus;
+import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentPriority;
 import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentSource;
+import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -61,11 +63,11 @@ public class AppointmentDto {
     private String roomNumber;
 
     // --- Clasificación y Workflow ---
-    @Schema(description = "Tipo de cita medica (CONSULTATION, FOLLOW_UP, etc.)", example = "CONSULTATION")
-    private String type;
+    @Schema(description = "Tipo de cita medica", example = "CONSULTATION")
+    private AppointmentType type;
 
-    @Schema(description = "Nivel de prioridad (NORMAL, URGENT, VIP)", example = "NORMAL")
-    private String priority;
+    @Schema(description = "Nivel de prioridad de la cita", example = "NORMAL")
+    private AppointmentPriority priority;
 
     @Schema(description = "Estado administrativo del workflow", example = "PENDING")
     private AppointmentStatus status;

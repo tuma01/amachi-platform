@@ -1,12 +1,14 @@
 package com.amachi.app.core.auth.config.multiTenant;
 
 import com.amachi.app.core.common.context.TenantContext;
+import com.amachi.app.core.domain.tenant.entity.Tenant;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
@@ -25,8 +27,6 @@ public class MultiTenantFilter extends OncePerRequestFilter {
     /**
      * Rutas que no requieren resolución de tenant:
      * infraestructura técnica (docs, health) y endpoints globales sin scope de tenant.
-     * Los flujos de auth (/auth/**, /account/**) ya NO están aquí — el subdominio
-     * provee el tenant incluso para peticiones no autenticadas.
      */
     private static final List<String> NO_TENANT_PATHS = List.of(
             "/tenants/**",
@@ -39,9 +39,12 @@ public class MultiTenantFilter extends OncePerRequestFilter {
     );
 
     private final TenantResolver tenantResolver;
+    private final TenantCache tenantCache;
 
-    public MultiTenantFilter(@Lazy TenantResolver tenantResolver) {
+    public MultiTenantFilter(@Lazy TenantResolver tenantResolver,
+                             @Lazy TenantCache tenantCache) {
         this.tenantResolver = tenantResolver;
+        this.tenantCache = tenantCache;
     }
 
     @Override
@@ -50,7 +53,7 @@ public class MultiTenantFilter extends OncePerRequestFilter {
         boolean skip = NO_TENANT_PATHS.stream()
                 .anyMatch(pattern -> PATH_MATCHER.match(pattern, path));
         if (skip) {
-            log.debug("⏭️ MultiTenantFilter skipped for: {}", path);
+            log.debug("MultiTenantFilter skipped for: {}", path);
         }
         return skip;
     }
@@ -62,69 +65,74 @@ public class MultiTenantFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
         try {
-            // 1️⃣ Extraer tenantCode desde el subdominio (fuente de verdad en producción)
-            //    Fallback a header X-Tenant-Code en entornos locales de desarrollo
             String tenantCode = extractTenantCode(request);
 
             if (tenantCode == null || tenantCode.isBlank()) {
-                log.warn("🚨 Tenant no resuelto para: {}", request.getRequestURI());
+                log.warn("Tenant no resuelto para: {}", request.getRequestURI());
                 response.sendError(HttpServletResponse.SC_BAD_REQUEST,
                         "Tenant could not be resolved. Ensure you are using a valid subdomain.");
                 return;
             }
 
-            // 2️⃣ Resolver TenantId (Long) con caché
-            Long tenantId = tenantResolver.resolveTenantId(tenantCode);
+            // Validar existencia y estado activo del tenant
+            Tenant tenant = tenantCache.getTenant(tenantCode);
+            if (tenant == null) {
+                log.warn("Tenant no encontrado: {}", tenantCode);
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED,
+                        "Tenant not found: " + tenantCode);
+                return;
+            }
 
-            // 3️⃣ Establecer contexto de tenant para aislamiento de BD
+            // Bloquear requests de tenants desactivados — ISO 27001 A.9
+            if (Boolean.FALSE.equals(tenant.getActive())) {
+                log.warn("Acceso bloqueado: tenant [{}] está desactivado", tenantCode);
+                response.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "Tenant account is disabled.");
+                return;
+            }
+
+            Long tenantId = tenant.getId();
+
             TenantContext.setTenantId(tenantId);
             TenantContext.setTenantCode(tenantCode);
-
-            // 4️⃣ Propagar como atributos del request para filtros posteriores
             request.setAttribute("tenantCode", tenantCode);
             request.setAttribute("tenantId", tenantId);
+            MDC.put("tenantCode", tenantCode);
 
-            log.debug("✅ Tenant context: code={}, id={} — {}", tenantCode, tenantId, request.getRequestURI());
+            log.debug("Tenant context: code={}, id={} — {}", tenantCode, tenantId, request.getRequestURI());
 
             filterChain.doFilter(request, response);
 
         } finally {
             TenantContext.clear();
+            MDC.remove("tenantCode");
         }
     }
 
     /**
-     * Extrae el tenantCode desde el subdominio del host.
-     * Ejemplo: "hospital-san-borja.vitalia.com" → "hospital-san-borja"
-     *
-     * En entornos locales (localhost, 127.0.0.1, redes privadas) usa el header
-     * X-Tenant-Code como fallback para facilitar el desarrollo y las pruebas.
+     * Extrae el tenantCode desde el subdominio del host en producción.
+     * En entornos locales usa el header X-Tenant-Code como fallback.
      */
     private String extractTenantCode(HttpServletRequest request) {
         String host = request.getServerName();
 
         if (isLocalEnvironment(host)) {
             String headerCode = request.getHeader("X-Tenant-Code");
-            log.debug("🛠️ Entorno local (host={}). Usando header X-Tenant-Code: {}", host, headerCode);
+            log.debug("Entorno local (host={}). Usando header X-Tenant-Code: {}", host, headerCode);
             return headerCode;
         }
 
-        // Producción: primer segmento del host es el subdominio
         int firstDot = host.indexOf('.');
         if (firstDot > 0) {
             String subdomain = host.substring(0, firstDot);
-            log.debug("🌐 Subdominio extraído: {} (host: {})", subdomain, host);
+            log.debug("Subdominio extraído: {} (host: {})", subdomain, host);
             return subdomain;
         }
 
-        log.warn("⚠️ No se pudo extraer subdominio del host: {}", host);
+        log.warn("No se pudo extraer subdominio del host: {}", host);
         return null;
     }
 
-    /**
-     * Detecta entornos de desarrollo local por el hostname.
-     * Incluye localhost, IPs de loopback y rangos de red privada (RFC 1918).
-     */
     private boolean isLocalEnvironment(String host) {
         return host.equals("localhost")
                 || host.equals("127.0.0.1")

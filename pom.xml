@@ -26,7 +26,6 @@
 
         <!-- business -->
         <module>core-management</module>
-<!--        <module>vitalia-medical</module>-->
         <module>vitalia-medical-core</module>
         <module>vitalia-medical-catalog</module>
 

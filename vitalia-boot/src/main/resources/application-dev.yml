@@ -18,6 +18,8 @@ spring:
     out-of-order: true
 
   jpa:
+    hibernate:
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:

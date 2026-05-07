@@ -6,7 +6,7 @@ import com.amachi.app.core.geography.address.dto.AddressDto;
 import com.amachi.app.core.geography.address.dto.search.AddressSearchDto;
 import com.amachi.app.core.geography.address.entity.Address;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
-import com.amachi.app.core.geography.address.service.impl.AddressServiceImpl;
+import com.amachi.app.core.geography.address.service.AddressService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class AddressController extends BaseController implements AddressApi {
 
-    private final AddressServiceImpl service;
+    private final AddressService service;
     private final AddressMapper mapper;
 
     @Override

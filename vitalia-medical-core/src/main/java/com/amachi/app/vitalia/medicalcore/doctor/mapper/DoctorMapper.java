@@ -16,25 +16,26 @@ public interface DoctorMapper extends EntityDtoMapper<Doctor, DoctorDto> {
 
     @Override
     @AuditableIgnoreConfig.IgnoreTenantAuditableFields
-//    @Mapping(target = "departmentUnit.id", source = "departmentUnitId")
-//    @Mapping(target = "employee.id",       source = "employeeId")
-//    @Mapping(target = "isDeleted",          ignore = true)
-    @Mapping(target = "person", ignore = true)
+    @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    @Mapping(target = "person",         ignore = true)
+    @Mapping(target = "departmentUnit", ignore = true)
+    @Mapping(target = "employee",       ignore = true)
     Doctor toEntity(DoctorDto dto);
 
     @Override
-    @Mapping(target = "doctorFullName", expression = "java(entity.getPerson() != null ? entity.getPerson().getFirstName() + \" \" + (entity.getPerson().getLastName() != null ? entity.getPerson().getLastName() : \"\") : null)")
-//    @Mapping(target = "departmentUnitId", source = "departmentUnit.id")
-//    @Mapping(target = "departmentUnitName", source = "departmentUnit.name")
-//    @Mapping(target = "employeeId",       source = "employee.id")
+    @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    @Mapping(target = "doctorFullName",     expression = "java(entity.getPerson() != null ? entity.getPerson().getFirstName() + \" \" + (entity.getPerson().getLastName() != null ? entity.getPerson().getLastName() : \"\") : null)")
+    @Mapping(target = "departmentUnitId",   source = "departmentUnit.id")
+    @Mapping(target = "departmentUnitName", source = "departmentUnit.name")
+    @Mapping(target = "employeeId",         source = "employee.id")
     DoctorDto toDto(Doctor entity);
 
     @Override
     @AuditableIgnoreConfig.IgnoreTenantAuditableFields
-    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
-//    @Mapping(target = "departmentUnit.id", source = "departmentUnitId")
-//    @Mapping(target = "employee.id",       source = "employeeId")
-//    @Mapping(target = "isDeleted",          ignore = true)
-    @Mapping(target = "person", ignore = true)
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+                 unmappedTargetPolicy = ReportingPolicy.IGNORE)
+    @Mapping(target = "person",         ignore = true)
+    @Mapping(target = "departmentUnit", ignore = true)
+    @Mapping(target = "employee",       ignore = true)
     void updateEntityFromDto(DoctorDto dto, @MappingTarget Doctor existing);
 }

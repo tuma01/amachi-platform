@@ -50,6 +50,9 @@ public class EncounterDto {
     @Schema(description = "Fecha y hora real del encuentro clínico (ISO-8601)", example = "2026-03-30T10:30:00Z")
     private OffsetDateTime encounterDate;
 
+    @Schema(description = "Fecha y hora de cierre del encuentro", example = "2026-03-30T11:15:00Z")
+    private OffsetDateTime endTime;
+
     @NotNull(message = "Tipo Encuentro {err.mandatory}")
     @Schema(description = "Tipo de acto (AMBULATORY, EMERGENCY, VIRTUAL)", example = "AMBULATORY")
     private VisitTypeEnum encounterType;
@@ -85,7 +88,6 @@ public class EncounterDto {
     @Schema(description = "ID del episodio de cuidado", example = "301")
     private Long episodeOfCareId;
 
-//    @NotNull(message = "Medical History {err.mandatory}")
-//    @Schema(description = "ID del expediente clínico vinculado", example = "102")
-//    private Long medicalHistoryId;
+    @Schema(description = "ID del expediente clínico vinculado", example = "102")
+    private Long medicalHistoryId;
 }
