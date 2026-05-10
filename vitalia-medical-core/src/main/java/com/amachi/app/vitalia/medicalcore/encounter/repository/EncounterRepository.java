@@ -5,10 +5,13 @@ import com.amachi.app.vitalia.medicalcore.common.enums.EncounterStatus;
 import com.amachi.app.vitalia.medicalcore.encounter.entity.Encounter;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface EncounterRepository extends TenantCommonRepository<Encounter, Long> {
+
+    List<Encounter> findByPatientIdAndTenantId(Long patientId, Long tenantId);
 
     /**
      * Busca un Encounter asociado a una Appointment dentro del tenant actual.
