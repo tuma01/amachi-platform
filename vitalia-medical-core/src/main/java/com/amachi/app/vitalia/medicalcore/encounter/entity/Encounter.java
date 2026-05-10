@@ -1,5 +1,6 @@
 package com.amachi.app.vitalia.medicalcore.encounter.entity;
 
+import com.amachi.app.core.common.converter.EncryptedStringConverter;
 import com.amachi.app.core.common.entity.Model;
 import com.amachi.app.core.common.exception.BusinessException;
 import com.amachi.app.core.domain.entity.AuditableTenantEntity;
@@ -77,18 +78,22 @@ public class Encounter extends AuditableTenantEntity implements Model {
     @Column(name = "CHIEF_COMPLAINT", columnDefinition = "TEXT")
     private String chiefComplaint;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "SYMPTOMS", columnDefinition = "TEXT")
     private String symptoms;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "DIAGNOSIS_NOTES", columnDefinition = "TEXT")
     private String diagnosisNotes;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "TREATMENT_PLAN", columnDefinition = "TEXT")
     private String treatmentPlan;
 
     @Column(name = "RECOMMENDATIONS", columnDefinition = "TEXT")
     private String recommendations;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "CLINICAL_NOTES", columnDefinition = "TEXT")
     private String clinicalNotes;
 

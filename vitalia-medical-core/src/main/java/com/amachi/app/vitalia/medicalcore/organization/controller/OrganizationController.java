@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.organization.dto.OrganizationDto;
 import com.amachi.app.vitalia.medicalcore.organization.dto.search.OrganizationSearchDto;
 import com.amachi.app.vitalia.medicalcore.organization.entity.Organization;
 import com.amachi.app.vitalia.medicalcore.organization.mapper.OrganizationMapper;
-import com.amachi.app.vitalia.medicalcore.organization.service.impl.OrganizationServiceImpl;
+import com.amachi.app.vitalia.medicalcore.organization.service.OrganizationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class OrganizationController extends BaseController implements OrganizationApi {
 
-    private final OrganizationServiceImpl service;
+    private final OrganizationService service;
     private final OrganizationMapper mapper;
 
     @Override

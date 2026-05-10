@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.prescription.dto.PrescriptionDto;
 import com.amachi.app.vitalia.medicalcore.prescription.dto.search.PrescriptionSearchDto;
 import com.amachi.app.vitalia.medicalcore.prescription.entity.Prescription;
 import com.amachi.app.vitalia.medicalcore.prescription.mapper.PrescriptionMapper;
-import com.amachi.app.vitalia.medicalcore.prescription.service.impl.PrescriptionServiceImpl;
+import com.amachi.app.vitalia.medicalcore.prescription.service.PrescriptionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class PrescriptionController extends BaseController implements PrescriptionApi {
 
-    private final PrescriptionServiceImpl service;
+    private final PrescriptionService service;
     private final PrescriptionMapper mapper;
 
     @Override

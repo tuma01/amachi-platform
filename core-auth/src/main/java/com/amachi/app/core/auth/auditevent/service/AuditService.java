@@ -9,15 +9,17 @@ public interface AuditService {
             Long userId,
             Long tenantId,
             String tenantCode,
-            String message
+            String message,
+            String ip
     );
 
-    void registerEvent(
+    default void registerEvent(
             AuditEventType type,
             Long userId,
             Long tenantId,
             String tenantCode,
-            String message,
-            String ip
-    );
+            String message
+    ) {
+        registerEvent(type, userId, tenantId, tenantCode, message, null);
+    }
 }

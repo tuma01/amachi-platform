@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.familyhistory.dto.FamilyHistoryDto;
 import com.amachi.app.vitalia.medicalcore.familyhistory.dto.search.FamilyHistorySearchDto;
 import com.amachi.app.vitalia.medicalcore.familyhistory.entity.FamilyHistory;
 import com.amachi.app.vitalia.medicalcore.familyhistory.mapper.FamilyHistoryMapper;
-import com.amachi.app.vitalia.medicalcore.familyhistory.service.impl.FamilyHistoryServiceImpl;
+import com.amachi.app.vitalia.medicalcore.familyhistory.service.FamilyHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class FamilyHistoryController extends BaseController implements FamilyHistoryApi {
 
-    private final FamilyHistoryServiceImpl service;
+    private final FamilyHistoryService service;
     private final FamilyHistoryMapper mapper;
 
     @Override

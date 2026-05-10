@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.profile.dto.UserProfileDto;
 import com.amachi.app.vitalia.medicalcore.profile.dto.search.UserProfileSearchDto;
 import com.amachi.app.vitalia.medicalcore.profile.entity.UserProfile;
 import com.amachi.app.vitalia.medicalcore.profile.mapper.UserProfileMapper;
-import com.amachi.app.vitalia.medicalcore.profile.service.impl.UserProfileServiceImpl;
+import com.amachi.app.vitalia.medicalcore.profile.service.UserProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class UserProfileController extends BaseController implements UserProfileApi {
 
-    private final UserProfileServiceImpl service;
+    private final UserProfileService service;
     private final UserProfileMapper mapper;
 
     @Override

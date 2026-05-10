@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.diagnosis.dto.Icd10Dto;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.dto.search.Icd10SearchDto;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.entity.Icd10;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.mapper.Icd10Mapper;
-import com.amachi.app.vitalia.medicalcatalog.diagnosis.service.impl.Icd10ServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.diagnosis.service.Icd10Service;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class Icd10Controller extends BaseController implements Icd10Api {
 
-    private final Icd10ServiceImpl service;
+    private final Icd10Service service;
     private final Icd10Mapper mapper;
 
     @Override

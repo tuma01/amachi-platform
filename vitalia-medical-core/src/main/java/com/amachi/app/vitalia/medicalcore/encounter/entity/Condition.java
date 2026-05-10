@@ -1,5 +1,6 @@
 package com.amachi.app.vitalia.medicalcore.encounter.entity;
 
+import com.amachi.app.core.common.converter.EncryptedStringConverter;
 import com.amachi.app.core.common.entity.Model;
 import com.amachi.app.core.domain.entity.AuditableTenantEntity;
 import com.amachi.app.vitalia.medicalcatalog.diagnosis.entity.Icd10;
@@ -76,9 +77,11 @@ public class Condition extends AuditableTenantEntity implements Model {
     @Column(name = "SEVERITY", length = 30)
     private Severity severity;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "SYMPTOMS", columnDefinition = "TEXT")
     private String symptoms;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "TREATMENT_NOTES", columnDefinition = "TEXT")
     private String treatmentNotes;
 

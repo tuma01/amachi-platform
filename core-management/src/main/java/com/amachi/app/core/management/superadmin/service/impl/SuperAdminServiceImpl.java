@@ -2,6 +2,7 @@ package com.amachi.app.core.management.superadmin.service.impl;
 
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
 import com.amachi.app.core.common.service.GenericService;
+import com.amachi.app.core.management.superadmin.service.SuperAdminService;
 import com.amachi.app.core.management.superadmin.dto.search.SuperAdminSearchDto;
 import com.amachi.app.core.management.superadmin.entity.SuperAdmin;
 import com.amachi.app.core.management.superadmin.repository.SuperAdminRepository;
@@ -28,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 
 @RequiredArgsConstructor
 @Service
-public class SuperAdminServiceImpl implements GenericService<SuperAdmin, SuperAdmin, SuperAdminSearchDto> {
+public class SuperAdminServiceImpl implements SuperAdminService {
 
     private final SuperAdminRepository superAdminRepository;
     private final SuperAdminDomainServiceImpl superAdminDomainService;

@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.doctor.dto.DoctorHospitalAssignmentDto
 import com.amachi.app.vitalia.medicalcore.doctor.dto.search.DoctorHospitalAssignmentSearchDto;
 import com.amachi.app.vitalia.medicalcore.doctor.entity.DoctorHospitalAssignment;
 import com.amachi.app.vitalia.medicalcore.doctor.mapper.DoctorHospitalAssignmentMapper;
-import com.amachi.app.vitalia.medicalcore.doctor.service.impl.DoctorHospitalAssignmentServiceImpl;
+import com.amachi.app.vitalia.medicalcore.doctor.service.DoctorHospitalAssignmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class DoctorHospitalAssignmentController extends BaseController implements DoctorHospitalAssignmentApi {
 
-    private final DoctorHospitalAssignmentServiceImpl service;
+    private final DoctorHospitalAssignmentService service;
     private final DoctorHospitalAssignmentMapper mapper;
 
     @Override

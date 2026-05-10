@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.medicalhistory.dto.MedicalHistoryDto;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.dto.search.MedicalHistorySearchDto;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.entity.MedicalHistory;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.mapper.MedicalHistoryMapper;
-import com.amachi.app.vitalia.medicalcore.medicalhistory.service.impl.MedicalHistoryServiceImpl;
+import com.amachi.app.vitalia.medicalcore.medicalhistory.service.MedicalHistoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class MedicalHistoryController extends BaseController implements MedicalHistoryApi {
 
-    private final MedicalHistoryServiceImpl service;
+    private final MedicalHistoryService service;
     private final MedicalHistoryMapper mapper;
 
     @Override

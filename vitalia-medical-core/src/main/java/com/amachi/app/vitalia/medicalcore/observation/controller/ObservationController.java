@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.observation.dto.ObservationDto;
 import com.amachi.app.vitalia.medicalcore.observation.dto.search.ObservationSearchDto;
 import com.amachi.app.vitalia.medicalcore.observation.entity.Observation;
 import com.amachi.app.vitalia.medicalcore.observation.mapper.ObservationMapper;
-import com.amachi.app.vitalia.medicalcore.observation.service.impl.ObservationServiceImpl;
+import com.amachi.app.vitalia.medicalcore.observation.service.ObservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class ObservationController extends BaseController implements ObservationApi {
 
-    private final ObservationServiceImpl service;
+    private final ObservationService service;
     private final ObservationMapper mapper;
 
     @Override

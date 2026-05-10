@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.demographic.dto.GenderDto;
 import com.amachi.app.vitalia.medicalcatalog.demographic.dto.search.GenderSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.demographic.entity.Gender;
 import com.amachi.app.vitalia.medicalcatalog.demographic.mapper.GenderMapper;
-import com.amachi.app.vitalia.medicalcatalog.demographic.service.impl.GenderServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.demographic.service.GenderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GenderController extends BaseController implements GenderApi {
 
-    private final GenderServiceImpl service;
+    private final GenderService service;
     private final GenderMapper mapper;
 
     @Override

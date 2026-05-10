@@ -6,7 +6,7 @@ import com.amachi.app.core.geography.municipality.dto.MunicipalityDto;
 import com.amachi.app.core.geography.municipality.dto.search.MunicipalitySearchDto;
 import com.amachi.app.core.geography.municipality.entity.Municipality;
 import com.amachi.app.core.geography.municipality.mapper.MunicipalityMapper;
-import com.amachi.app.core.geography.municipality.service.impl.MunicipalityServiceImpl;
+import com.amachi.app.core.geography.municipality.service.MunicipalityService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class MunicipalityController extends BaseController implements MunicipalityApi {
 
-    private final MunicipalityServiceImpl service;
+    private final MunicipalityService service;
     private final MunicipalityMapper mapper;
 
     @Override

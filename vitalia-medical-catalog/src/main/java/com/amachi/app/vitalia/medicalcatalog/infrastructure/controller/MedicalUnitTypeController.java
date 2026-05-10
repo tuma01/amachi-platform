@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.infrastructure.dto.MedicalUnitTypeD
 import com.amachi.app.vitalia.medicalcatalog.infrastructure.dto.search.MedicalUnitTypeSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.infrastructure.entity.MedicalUnitType;
 import com.amachi.app.vitalia.medicalcatalog.infrastructure.mapper.MedicalUnitTypeMapper;
-import com.amachi.app.vitalia.medicalcatalog.infrastructure.service.impl.MedicalUnitTypeServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.infrastructure.service.MedicalUnitTypeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MedicalUnitTypeController extends BaseController implements MedicalUnitTypeApi {
 
-    private final MedicalUnitTypeServiceImpl service;
+    private final MedicalUnitTypeService service;
     private final MedicalUnitTypeMapper mapper;
 
     @Override

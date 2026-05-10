@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.hospitalization.dto.DischargeMedicatio
 import com.amachi.app.vitalia.medicalcore.hospitalization.dto.search.DischargeMedicationSearchDto;
 import com.amachi.app.vitalia.medicalcore.hospitalization.entity.DischargeMedication;
 import com.amachi.app.vitalia.medicalcore.hospitalization.mapper.DischargeMedicationMapper;
-import com.amachi.app.vitalia.medicalcore.hospitalization.service.impl.DischargeMedicationServiceImpl;
+import com.amachi.app.vitalia.medicalcore.hospitalization.service.DischargeMedicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class DischargeMedicationController extends BaseController implements DischargeMedicationApi {
 
-    private final DischargeMedicationServiceImpl service;
+    private final DischargeMedicationService service;
     private final DischargeMedicationMapper mapper;
 
     @Override

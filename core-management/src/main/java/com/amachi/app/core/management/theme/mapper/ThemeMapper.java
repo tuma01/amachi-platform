@@ -13,6 +13,7 @@ public interface ThemeMapper extends EntityDtoMapper<Theme, ThemeDto> {
     @Override
     @AuditableIgnoreConfig.IgnoreHybridAuditableFields
     @BeanMapping(unmappedSourcePolicy = ReportingPolicy.IGNORE)
+    @Mapping(target = "deleted", ignore = true)
     Theme toEntity(ThemeDto dto);
 
     @Override

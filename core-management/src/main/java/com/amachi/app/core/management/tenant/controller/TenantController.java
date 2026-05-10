@@ -3,14 +3,14 @@ package com.amachi.app.core.management.tenant.controller;
 import com.amachi.app.core.common.controller.BaseController;
 import com.amachi.app.core.common.dto.PageResponseDto;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
-import com.amachi.app.core.geography.address.service.impl.AddressServiceImpl;
+import com.amachi.app.core.geography.address.service.AddressService;
 import com.amachi.app.core.domain.tenant.dto.TenantDto;
 import com.amachi.app.core.domain.tenant.dto.search.TenantSearchDto;
 import com.amachi.app.core.domain.tenant.entity.Tenant;
 
 import com.amachi.app.core.domain.tenant.mapper.TenantMapper;
-import com.amachi.app.core.management.tenant.service.impl.TenantDomainServiceImpl;
-import com.amachi.app.core.management.tenant.service.impl.TenantServiceImpl;
+import com.amachi.app.core.management.tenant.service.TenantDomainService;
+import com.amachi.app.core.management.tenant.service.TenantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
@@ -24,11 +24,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TenantController extends BaseController implements TenantApi {
 
-    private final TenantServiceImpl service;
+    private final TenantService service;
     private final TenantMapper mapper;
-    private final AddressServiceImpl addressService;
+    private final AddressService addressService;
     private final AddressMapper addressMapper;
-    private final TenantDomainServiceImpl tenantDomainService;
+    private final TenantDomainService tenantDomainService;
 
     // --- SUPER ADMIN ENDPOINTS ---
     @Override

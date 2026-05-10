@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.appointment.dto.AppointmentReminderDto
 import com.amachi.app.vitalia.medicalcore.appointment.dto.search.AppointmentReminderSearchDto;
 import com.amachi.app.vitalia.medicalcore.appointment.entity.AppointmentReminder;
 import com.amachi.app.vitalia.medicalcore.appointment.mapper.AppointmentReminderMapper;
-import com.amachi.app.vitalia.medicalcore.appointment.service.impl.AppointmentReminderServiceImpl;
+import com.amachi.app.vitalia.medicalcore.appointment.service.AppointmentReminderService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class AppointmentReminderController extends BaseController implements AppointmentReminderApi {
 
-    private final AppointmentReminderServiceImpl service;
+    private final AppointmentReminderService service;
     private final AppointmentReminderMapper mapper;
 
     @Override

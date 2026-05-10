@@ -6,7 +6,7 @@ import com.amachi.app.core.geography.state.dto.StateDto;
 import com.amachi.app.core.geography.state.dto.search.StateSearchDto;
 import com.amachi.app.core.geography.state.entity.State;
 import com.amachi.app.core.geography.state.mapper.StateMapper;
-import com.amachi.app.core.geography.state.service.impl.StateServiceImpl;
+import com.amachi.app.core.geography.state.service.StateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class StateController extends BaseController implements StateApi {
 
-    private final StateServiceImpl service;
+    private final StateService service;
     private final StateMapper mapper;
 
     @Override

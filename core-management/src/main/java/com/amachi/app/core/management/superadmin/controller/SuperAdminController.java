@@ -6,7 +6,7 @@ import com.amachi.app.core.management.superadmin.dto.SuperAdminDto;
 import com.amachi.app.core.management.superadmin.dto.search.SuperAdminSearchDto;
 import com.amachi.app.core.management.superadmin.entity.SuperAdmin;
 import com.amachi.app.core.management.superadmin.mapper.SuperAdminMapper;
-import com.amachi.app.core.management.superadmin.service.impl.SuperAdminServiceImpl;
+import com.amachi.app.core.management.superadmin.service.SuperAdminService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SuperAdminController extends BaseController implements SuperAdminApi {
 
-    private final SuperAdminServiceImpl service;
+    private final SuperAdminService service;
     private final SuperAdminMapper mapper;
 
     @Override

@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.kinship.dto.KinshipDto;
 import com.amachi.app.vitalia.medicalcatalog.kinship.dto.search.KinshipSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.kinship.entity.Kinship;
 import com.amachi.app.vitalia.medicalcatalog.kinship.mapper.KinshipMapper;
-import com.amachi.app.vitalia.medicalcatalog.kinship.service.impl.KinshipServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.kinship.service.KinshipService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class KinshipController extends BaseController implements KinshipApi {
 
-    private final KinshipServiceImpl service;
+    private final KinshipService service;
     private final KinshipMapper mapper;
 
     @Override

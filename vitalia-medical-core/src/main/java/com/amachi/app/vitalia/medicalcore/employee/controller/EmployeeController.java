@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.employee.dto.EmployeeDto;
 import com.amachi.app.vitalia.medicalcore.employee.dto.search.EmployeeSearchDto;
 import com.amachi.app.vitalia.medicalcore.employee.entity.Employee;
 import com.amachi.app.vitalia.medicalcore.employee.mapper.EmployeeMapper;
-import com.amachi.app.vitalia.medicalcore.employee.service.impl.EmployeeServiceImpl;
+import com.amachi.app.vitalia.medicalcore.employee.service.EmployeeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class EmployeeController extends BaseController implements EmployeeApi {
 
-    private final EmployeeServiceImpl service;
+    private final EmployeeService service;
     private final EmployeeMapper mapper;
 
     @Override

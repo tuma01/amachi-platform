@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.habit.dto.ToxicHabitDto;
 import com.amachi.app.vitalia.medicalcore.habit.dto.search.HabitSearchDto;
 import com.amachi.app.vitalia.medicalcore.habit.entity.ToxicHabit;
 import com.amachi.app.vitalia.medicalcore.habit.mapper.ToxicHabitMapper;
-import com.amachi.app.vitalia.medicalcore.habit.service.impl.ToxicHabitServiceImpl;
+import com.amachi.app.vitalia.medicalcore.habit.service.ToxicHabitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class ToxicHabitController extends BaseController implements ToxicHabitApi {
 
-    private final ToxicHabitServiceImpl service;
+    private final ToxicHabitService service;
     private final ToxicHabitMapper mapper;
 
     @Override

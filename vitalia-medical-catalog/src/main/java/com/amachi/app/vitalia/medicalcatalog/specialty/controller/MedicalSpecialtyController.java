@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.specialty.dto.MedicalSpecialtyDto;
 import com.amachi.app.vitalia.medicalcatalog.specialty.dto.search.MedicalSpecialtySearchDto;
 import com.amachi.app.vitalia.medicalcatalog.specialty.entity.MedicalSpecialty;
 import com.amachi.app.vitalia.medicalcatalog.specialty.mapper.MedicalSpecialtyMapper;
-import com.amachi.app.vitalia.medicalcatalog.specialty.service.impl.MedicalSpecialtyServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.specialty.service.MedicalSpecialtyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MedicalSpecialtyController extends BaseController implements MedicalSpecialtyApi {
 
-    private final MedicalSpecialtyServiceImpl service;
+    private final MedicalSpecialtyService service;
     private final MedicalSpecialtyMapper mapper;
 
     @Override

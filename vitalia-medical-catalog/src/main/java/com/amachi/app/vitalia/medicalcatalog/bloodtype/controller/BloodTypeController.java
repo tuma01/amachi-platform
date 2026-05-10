@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.bloodtype.dto.BloodTypeDto;
 import com.amachi.app.vitalia.medicalcatalog.bloodtype.dto.search.BloodTypeSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.bloodtype.entity.BloodType;
 import com.amachi.app.vitalia.medicalcatalog.bloodtype.mapper.BloodTypeMapper;
-import com.amachi.app.vitalia.medicalcatalog.bloodtype.service.impl.BloodTypeServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.bloodtype.service.BloodTypeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BloodTypeController extends BaseController implements BloodTypeApi {
 
-    private final BloodTypeServiceImpl service;
+    private final BloodTypeService service;
     private final BloodTypeMapper mapper;
 
     @Override

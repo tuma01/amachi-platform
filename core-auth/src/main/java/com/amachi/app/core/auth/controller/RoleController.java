@@ -4,7 +4,7 @@ import com.amachi.app.core.auth.dto.RoleDto;
 import com.amachi.app.core.auth.dto.search.RoleSearchDto;
 import com.amachi.app.core.auth.entity.Role;
 import com.amachi.app.core.auth.mapper.RoleMapper;
-import com.amachi.app.core.auth.service.impl.RoleServiceImpl;
+import com.amachi.app.core.auth.service.RoleService;
 import com.amachi.app.core.common.controller.BaseController;
 import com.amachi.app.core.common.dto.PageResponseDto;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class RoleController extends BaseController implements RoleApi {
 
-    private final RoleServiceImpl service;
+    private final RoleService service;
     private final RoleMapper mapper;
 
     @Override

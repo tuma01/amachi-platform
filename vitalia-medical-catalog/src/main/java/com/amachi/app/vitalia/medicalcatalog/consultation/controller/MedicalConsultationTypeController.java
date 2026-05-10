@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.consultation.dto.MedicalConsultatio
 import com.amachi.app.vitalia.medicalcatalog.consultation.dto.search.MedicalConsultationTypeSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.consultation.entity.MedicalConsultationType;
 import com.amachi.app.vitalia.medicalcatalog.consultation.mapper.MedicalConsultationTypeMapper;
-import com.amachi.app.vitalia.medicalcatalog.consultation.service.impl.MedicalConsultationTypeServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.consultation.service.MedicalConsultationTypeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MedicalConsultationTypeController extends BaseController implements MedicalConsultationTypeApi {
 
-    private final MedicalConsultationTypeServiceImpl service;
+    private final MedicalConsultationTypeService service;
     private final MedicalConsultationTypeMapper mapper;
 
     @Override

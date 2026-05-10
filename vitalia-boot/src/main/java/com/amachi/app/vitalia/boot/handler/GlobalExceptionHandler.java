@@ -10,6 +10,7 @@ import com.amachi.app.core.common.exception.BadRequestException;
 import com.amachi.app.core.common.exception.BusinessException;
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
 import com.amachi.app.core.common.exception.InvalidAvatarException;
+import jakarta.validation.ConstraintViolationException;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -107,6 +108,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity
                 .status(HttpStatusMapper.toSpringStatus(safeStatus))
                 .body(ApiResponse.error(safeStatus, detail, path));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(
+            ConstraintViolationException ex, HttpServletRequest request) {
+
+        Map<String, String> invalidFields = ex.getConstraintViolations()
+                .stream()
+                .collect(Collectors.toMap(
+                        cv -> cv.getPropertyPath().toString(),
+                        cv -> Translator.toLocale(cv.getMessage(), null),
+                        (oldVal, newVal) -> oldVal + "; " + newVal));
+
+        ErrorDetail detail = ErrorDetail.from(
+                ErrorCode.VAL_REQUIRED_FIELD,
+                Translator.toLocale("validation.error.fields", null),
+                null,
+                Map.of("errorCount", invalidFields.size(), "invalidFields", invalidFields));
+
+        return buildErrorResponse(HttpStatusCode.BAD_REQUEST, detail, request);
     }
 
     // =====================================

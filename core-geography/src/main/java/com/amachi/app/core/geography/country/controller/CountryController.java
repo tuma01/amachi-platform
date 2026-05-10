@@ -6,7 +6,7 @@ import com.amachi.app.core.geography.country.dto.CountryDto;
 import com.amachi.app.core.geography.country.dto.search.CountrySearchDto;
 import com.amachi.app.core.geography.country.entity.Country;
 import com.amachi.app.core.geography.country.mapper.CountryMapper;
-import com.amachi.app.core.geography.country.service.impl.CountryServiceImpl;
+import com.amachi.app.core.geography.country.service.CountryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class CountryController extends BaseController implements CountryApi {
 
-    private final CountryServiceImpl service;
+    private final CountryService service;
     private final CountryMapper mapper;
 
     @Override
