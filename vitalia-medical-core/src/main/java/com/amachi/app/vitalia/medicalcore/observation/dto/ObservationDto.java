@@ -3,6 +3,7 @@ package com.amachi.app.vitalia.medicalcore.observation.dto;
 import com.amachi.app.vitalia.medicalcore.common.enums.ObservationStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.validation.annotation.Validated;
 
@@ -47,22 +48,28 @@ public class ObservationDto {
     private ObservationStatus status;
 
     @NotNull(message = "Code {err.mandatory}")
+    @Size(max = 50, message = "Code {err.max.length}")
     @Schema(description = "Clinical code (e.g., LOINC, Atomic Code)", example = "8867-4")
     private String code;
 
+    @Size(max = 255, message = "Name {err.max.length}")
     @Schema(description = "Descriptive name of the test or finding", example = "Heart Rate")
     private String name;
 
     @NotNull(message = "Value {err.mandatory}")
+    @Size(max = 500, message = "Value {err.max.length}")
     @Schema(description = "Recorded clinical value", example = "72")
     private String value;
 
+    @Size(max = 50, message = "Unit {err.max.length}")
     @Schema(description = "Unit of measurement", example = "bpm")
     private String unit;
 
+    @Size(max = 100, message = "Reference range {err.max.length}")
     @Schema(description = "Normal reference range for interpretation", example = "60-100 bpm")
     private String referenceRange;
 
+    @Size(max = 50, message = "Interpretation {err.max.length}")
     @Schema(description = "Clinical interpretation (NORMAL, HIGH, LOW, CRITICAL)", example = "NORMAL")
     private String interpretation;
 
@@ -70,6 +77,7 @@ public class ObservationDto {
     @Schema(description = "Timestamp when the measurement was performed", example = "2026-03-30T10:35:00Z")
     private OffsetDateTime effectiveDateTime;
 
+    @Size(max = 5000, message = "Notes {err.max.length}")
     @Schema(description = "Additional clinical notes or comments", example = "Patient at rest")
     private String notes;
 }
