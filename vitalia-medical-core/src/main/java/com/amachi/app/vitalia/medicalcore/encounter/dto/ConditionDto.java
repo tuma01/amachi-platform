@@ -5,6 +5,7 @@ import com.amachi.app.vitalia.medicalcore.common.enums.ConditionType;
 import com.amachi.app.vitalia.medicalcore.common.enums.Severity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.validation.annotation.Validated;
 
@@ -43,6 +44,7 @@ public class ConditionDto {
     @Schema(description = "ICD-10 Code string (Calculated)", example = "A00.0", accessMode = Schema.AccessMode.READ_ONLY)
     private String icd10Code;
 
+    @Size(max = 255, message = "Name {err.max.length}")
     @Schema(description = "Name of the diagnosis (Literal/Display)", example = "Cholera due to Vibrio cholerae 01, biotype cholerae")
     private String name;
 
@@ -64,9 +66,11 @@ public class ConditionDto {
     @Schema(description = "Severity level of the pathology (SEVERE, MODERATE, MILD)", example = "MODERATE")
     private Severity severity;
 
+    @Size(max = 5000, message = "Symptoms {err.max.length}")
     @Schema(description = "Associated clinical symptoms", example = "Severe diarrhea, dehydration")
     private String symptoms;
 
+    @Size(max = 5000, message = "Treatment notes {err.max.length}")
     @Schema(description = "Specific treatment notes for this condition", example = "Immediate intravenous hydration")
     private String treatmentNotes;
 

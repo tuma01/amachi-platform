@@ -4,6 +4,7 @@ import com.amachi.app.core.common.enums.VisitTypeEnum;
 import com.amachi.app.vitalia.medicalcore.common.enums.EncounterStatus;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.validation.annotation.Validated;
 
@@ -61,24 +62,31 @@ public class EncounterDto {
     @Schema(description = "Ciclo de vida del acto clínico (PLANNED, IN_PROGRESS, COMPLETED, etc.)", example = "IN_PROGRESS")
     private EncounterStatus status;
 
+    @Size(max = 50, message = "Nivel triage {err.max.length}")
     @Schema(description = "Nivel de Triage (Urgencia)", example = "LEVEL_1_EMERGENCY")
     private String triageLevel;
 
+    @Size(max = 2000, message = "Motivo consulta {err.max.length}")
     @Schema(description = "Motivo de la consulta (Chief Complaint)", example = "Dolor abdominal agudo")
     private String chiefComplaint;
 
+    @Size(max = 5000, message = "Síntomas {err.max.length}")
     @Schema(description = "Sintomatología reportada", example = "Náuseas, fiebre leve")
     private String symptoms;
 
+    @Size(max = 5000, message = "Notas diagnósticas {err.max.length}")
     @Schema(description = "Notas diagnósticas preliminares o finales", example = "Sospecha de apendicitis")
     private String diagnosisNotes;
 
+    @Size(max = 5000, message = "Plan de tratamiento {err.max.length}")
     @Schema(description = "Plan de tratamiento propuesto", example = "Observación y analgésicos")
     private String treatmentPlan;
 
+    @Size(max = 5000, message = "Recomendaciones {err.max.length}")
     @Schema(description = "Recomendaciones al paciente", example = "Reposo absoluto")
     private String recommendations;
 
+    @Size(max = 5000, message = "Notas clínicas {err.max.length}")
     @Schema(description = "Notas adicionales de la atención clínica", example = "Paciente cooperativo")
     private String clinicalNotes;
 

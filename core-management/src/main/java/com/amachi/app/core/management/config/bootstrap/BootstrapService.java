@@ -1,7 +1,5 @@
 package com.amachi.app.core.management.config.bootstrap;
 
-import com.amachi.app.core.auth.entity.User;
-import com.amachi.app.core.auth.repository.UserRepository;
 import com.amachi.app.core.common.context.TenantContext;
 import com.amachi.app.core.common.enums.*;
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
@@ -14,16 +12,13 @@ import com.amachi.app.core.domain.theme.entity.Theme;
 import com.amachi.app.core.geography.address.dto.AddressDto;
 import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
 import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
-import com.amachi.app.core.management.tenant.service.impl.TenantDomainServiceImpl;
+import com.amachi.app.core.management.tenant.service.TenantDomainService;
 import com.amachi.app.core.management.theme.repository.ThemeRepository;
 import com.amachi.app.vitalia.medicalcore.hospital.entity.Hospital;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * BootstrapService (SaaS Elite Hardened).
@@ -36,10 +31,9 @@ import java.util.Set;
 public class BootstrapService {
 
     private final TenantRepository tenantRepository;
-    private final UserRepository userRepository;
     private final AppBootstrapProperties appBootstrapProperties;
     private final ThemeRepository themeRepository;
-    private final TenantDomainServiceImpl tenantDomainService;
+    private final TenantDomainService tenantDomainService;
 
     // SaaS Elite Provisioning Engine
     private final UserProvisioningService userProvisioningService;

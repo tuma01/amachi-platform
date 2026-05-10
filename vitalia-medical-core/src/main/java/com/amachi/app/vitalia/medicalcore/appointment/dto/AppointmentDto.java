@@ -6,6 +6,7 @@ import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentSource;
 import com.amachi.app.vitalia.medicalcore.common.enums.AppointmentType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 import org.springframework.validation.annotation.Validated;
 
@@ -81,6 +82,7 @@ public class AppointmentDto {
     @Schema(description = "ID de la visita clinica vinculada. Solo lectura: se asigna automaticamente al registrar el arribo.", example = "12001")
     private Long visitId;
 
+    @Size(max = 2000, message = "Motivo {err.max.length}")
     @Schema(description = "Motivo de la consulta o descripcion de sintomas", example = "CONTROL POST-QUIRURGICO")
     private String reason;
 
@@ -108,6 +110,7 @@ public class AppointmentDto {
     private String lockedBy;
 
     // --- Desestimiento y Cancelaciones ---
+    @Size(max = 2000, message = "Razón de cancelación {err.max.length}")
     @Schema(description = "Razón formal por la que se canceló el agendamiento", example = "Paciente solicita reprogramación por viaje")
     private String cancelReason;
 
