@@ -10,6 +10,7 @@ import com.amachi.app.core.domain.tenant.repository.TenantRepository;
 import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
 import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
 import com.amachi.app.core.management.superadmin.entity.SuperAdmin;
+import com.amachi.app.core.management.superadmin.service.SuperAdminDomainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -22,7 +23,7 @@ import static java.util.Objects.requireNonNull;
 @Transactional
 @RequiredArgsConstructor
 @Slf4j
-public class SuperAdminDomainServiceImpl {
+public class SuperAdminDomainServiceImpl implements SuperAdminDomainService {
 
     private final UserRepository userRepository;
     private final TenantRepository tenantRepository;

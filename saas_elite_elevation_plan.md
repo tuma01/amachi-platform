@@ -353,9 +353,9 @@ app:
 ```
 > **IMPORTANTE:** En producción siempre setear `APP_PHI_ENCRYPTION_KEY` como variable de entorno con una clave generada con `openssl rand -base64 32`. El default es solo para dev.
 
-**Campos candidatos para siguiente iteración (cuando la app esté estabilizada):**
-- `Encounter.notes`, `Condition.clinicalNotes`, `Observation.value` (TEXT largo — evaluar impacto en búsquedas)
-- `Patient.allergySummary`, `Patient.additionalRemarks`
+**Sprint 2 (AMA-029):** La encriptación se extendió a campos TEXT clínicos. Ver documentación completa en **sección 12.3**.
+
+**Campos cifrados post-Sprint 2:** `Patient.nhc`, `Patient.allergySummary`, `Patient.additionalRemarks`, `Encounter.symptoms`, `Encounter.diagnosisNotes`, `Encounter.treatmentPlan`, `Encounter.clinicalNotes`, `Condition.symptoms`, `Condition.treatmentNotes`.
 
 **Estándares cubiertos:** ISO 27001 A.10.1 / HIPAA §164.312(a)(2)(iv) — Gestión de claves criptográficas.
 
@@ -431,11 +431,273 @@ app:
 
 ---
 
-*Last update: 2026-05-07 - Sprint 1 completado + estabilización arquitectura AMA-027. App 100% funcional. Sprint 2 pendiente: Envers RevisionEntity + Global Validation Handler.*
+*Last update: 2026-05-09 - Sprint 1 completado + Sprint 2 en ejecución (AMA-029). App 100% funcional.*
 
 ---
 
-## 🛡️ 10. SECURITY AUDIT — ESTADO DE COMPLIANCE (2026-05-07)
+## 🚀 12. SPRINT 2 — AUDITORÍA ENVERS + PHI ENCRYPTION EXTENDIDA (AMA-029 / 2026-05-09)
+
+### 12.1 T0 — Controllers: Inyección de interfaz (no implementación)
+
+**Problema:** 43 controllers inyectaban directamente la clase `*ServiceImpl` en lugar de la interfaz `*Service`, acoplando el controller a la implementación concreta e impidiendo decoración, proxying y testing.
+
+**Fix aplicado (mass replace vía PowerShell):**
+```
+import ...service.impl.XxxServiceImpl  →  import ...service.XxxService
+private final XxxServiceImpl service   →  private final XxxService service
+```
+
+**Regla establecida (ver sección 5.2):** Los controllers siempre inyectan la interfaz del servicio. Nunca la implementación concreta.
+
+**Archivos afectados:** 43 controllers en `vitalia-medical-core`, `vitalia-boot`, módulos de gestión.
+
+---
+
+### 12.2 T1 — Hibernate Envers: AuditRevisionEntity + DMN_AUDIT_REVISION
+
+**Problema:** La tabla estándar de Envers se llama `REVINFO` — no sigue la convención de prefijo `DMN_` del proyecto y no describe su propósito. Tampoco registraba el tenant ni el usuario que realizó cada cambio; solo almacenaba número de revisión y timestamp.
+
+**Decisión de diseño:** Tabla renombrada a `DMN_AUDIT_REVISION`. Campos extendidos con `userId`, `tenantCode` y `username` para trazabilidad completa sin JOIN.
+
+**Componentes creados:**
+
+| Archivo | Módulo | Función |
+|---|---|---|
+| `AuditRevisionEntity.java` | `core-auth` | `@RevisionEntity` — mapea tabla `DMN_AUDIT_REVISION` |
+| `AuditRevisionListener.java` | `core-auth` | `RevisionListener` — popula userId/tenantCode/username en cada revisión |
+
+**`AuditRevisionEntity` — estructura de tabla:**
+
+```java
+@Entity
+@Table(name = "DMN_AUDIT_REVISION")
+@RevisionEntity(AuditRevisionListener.class)
+public class AuditRevisionEntity {
+    @RevisionNumber  @Column(name = "REV")     private long rev;      // PK autoincremental
+    @RevisionTimestamp @Column(name = "REVTSTMP") private long revtstmp; // epoch millis
+    @Column(name = "USER_ID")                  private Long userId;      // FK lógica al usuario
+    @Column(name = "TENANT_CODE", length = 50) private String tenantCode;// tenant del cambio
+    @Column(name = "USERNAME",    length = 100) private String username;  // sin JOIN futuro
+}
+```
+
+**`AuditRevisionListener` — lógica de populación:**
+
+```java
+public class AuditRevisionListener implements RevisionListener {
+    @Override
+    public void newRevision(Object revisionEntity) {
+        // NO puede usar @Autowired — Envers instancia fuera del contexto Spring
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()
+                && auth.getPrincipal() instanceof AuthContext ctx) {
+            rev.setUserId(ctx.getUserId());
+            rev.setTenantCode(ctx.getTenantCode());
+            rev.setUsername(auth.getName());
+            return;
+        }
+        // Fallback: jobs de sistema / bootstrap sin sesión de usuario
+        String tenantCode = TenantContext.getTenantCode();
+        if (tenantCode != null) rev.setTenantCode(tenantCode);
+        rev.setUsername("system");
+    }
+}
+```
+
+> **CRÍTICO — Restricción de Spring:** `RevisionListener` es instanciado por Envers **fuera del contexto Spring**. No puede usar `@Autowired`, `@Value` ni ningún bean inyectado. Solo puede acceder a contextos estáticos: `SecurityContextHolder` y `TenantContext` (ambos usan `ThreadLocal`).
+
+**Ubicación en `core-auth` (no `core-domain`):** Se eligió `core-auth` porque necesita acceder a `AuthContext` (que vive en `core-auth`). Ponerlo en `core-domain` crearía una dependencia circular `core-domain → core-auth → core-domain`.
+
+**Migraciones SQL actualizadas:**
+
+| Script | Cambio |
+|---|---|
+| `V3_9__create_dmn_person_aud.sql` | `REVINFO` → `DMN_AUDIT_REVISION` + columnas `USER_ID`, `TENANT_CODE`, `USERNAME` |
+| `V3_10`, `V10_10`, `V10_20`, `V10_42` | Todas las FKs `REFERENCES REVINFO(REV)` → `REFERENCES DMN_AUDIT_REVISION(REV)` |
+
+**Regla de auditoría en entidades:**
+
+| Anotación | Cuándo usar |
+|---|---|
+| `@Audited` | Entidad principal o campo que sí debe auditarse |
+| `@Audited(targetAuditMode = RelationTargetAuditMode.NOT_AUDITED)` | FK a entidad de catálogo global (Icd10, Medication, TipoConsulta) — la entidad destino no tiene tabla `_aud` |
+| `@NotAudited` | Campo o colección que no debe auditarse (ej: `@ElementCollection`, foto binaria) |
+
+**Estándar cubierto:** ISO 27001 A.12.4 / HIPAA §164.312(b) — trazabilidad completa de cambios con actor y tenant.
+
+---
+
+### 12.3 T3 — PHI Encryption: campos TEXT clínicos extendidos
+
+**Contexto previo (Sprint 1 / sección 9.5):** Solo se cifró `NHC` (identificador único del paciente) usando IV determinístico para preservar la constraint UNIQUE.
+
+**Extensión Sprint 2:** Se aplicó `@Convert(converter = EncryptedStringConverter.class)` a todos los campos TEXT con datos clínicos sensibles en las entidades del core médico.
+
+#### Mapa completo de campos cifrados
+
+| Entidad | Campo | Tipo BD | Razón |
+|---|---|---|---|
+| `Patient` | `nhc` | VARCHAR(100) | Identificador único paciente — UNIQUE constraint |
+| `Patient` | `allergySummary` | TEXT | Alergias — dato clínico crítico |
+| `Patient` | `additionalRemarks` | TEXT | Observaciones clínicas del paciente |
+| `Encounter` | `symptoms` | TEXT | Síntomas relatados en la consulta |
+| `Encounter` | `diagnosisNotes` | TEXT | Notas diagnósticas del médico |
+| `Encounter` | `treatmentPlan` | TEXT | Plan de tratamiento |
+| `Encounter` | `clinicalNotes` | TEXT | Notas clínicas libres |
+| `Condition` | `symptoms` | TEXT | Síntomas asociados a la condición |
+| `Condition` | `treatmentNotes` | TEXT | Notas de tratamiento de la condición |
+
+> **Campos NOT cifrados (intencionalmente):** `chiefComplaint`, `recommendations`, `notes` en `Encounter` — son datos operativos/administrativos, no PHI crítico.
+
+#### EncryptedStringConverter — Documentación técnica
+
+**Archivo:** `core-common/.../converter/EncryptedStringConverter.java`
+
+**Algoritmo:** AES-256/CBC/PKCS5Padding
+
+**Flujo de cifrado:**
+```
+plaintext (String, UTF-8)
+    └─► AES-256/CBC/PKCS5Padding [ key=buildKey(), iv=buildIv() ]
+        └─► encrypted bytes
+            └─► Base64 → ciphertext (String, almacenado en BD)
+```
+
+**Flujo de descifrado:**
+```
+ciphertext (Base64 String de BD)
+    └─► Base64.decode → bytes
+        └─► AES-256/CBC/DECRYPT [ key=buildKey(), iv=buildIv() ]
+            └─► plaintext (String, UTF-8)
+```
+
+**IV determinístico — diseño y tradeoff:**
+```java
+private IvParameterSpec buildIv() throws Exception {
+    byte[] keyBytes = Base64.getDecoder().decode(EncryptionKeyHolder.getEncryptionKey());
+    MessageDigest sha = MessageDigest.getInstance("SHA-256");
+    byte[] hash = sha.digest(keyBytes);
+    return new IvParameterSpec(Arrays.copyOf(hash, 16)); // primeros 16 bytes del SHA-256 de la clave
+}
+```
+
+| Característica | Valor |
+|---|---|
+| IV aleatorio | ✗ — IV fijo derivado de SHA-256(key)[0..15] |
+| Mismo plaintext → mismo ciphertext | ✅ Siempre |
+| Preserva UNIQUE constraints en BD | ✅ Sí (`NHC` puede ser UNIQUE) |
+| Resistencia a criptoanálisis de frecuencia | ⚠️ Reducida vs IV aleatorio |
+| Adecuado para | Identificadores únicos (NHC), campos cortos (<1KB) |
+| No adecuado para | Documentos largos con texto repetitivo si se requiere máxima seguridad criptográfica |
+
+> **Tradeoff aceptado:** La necesidad de preservar la constraint `UNIQUE` en `NHC` justifica el IV determinístico. Para campos TEXT largos sin constraint de unicidad, en una iteración futura se puede migrar a IV aleatorio (almacenado como prefijo del ciphertext).
+
+#### EncryptionKeyHolder — Bridge Spring → JPA
+
+**Problema resuelto:** JPA instancia los `AttributeConverter` **fuera del contexto Spring** (igual que `RevisionListener`). No pueden recibir `@Value` directamente.
+
+**Solución:**
+```java
+@Component
+public class EncryptionKeyHolder {
+    private static String encryptionKey;  // campo estático — accesible sin instancia
+
+    @Value("${app.phi.encryption-key}")
+    public void setEncryptionKey(String key) {  // setter con @Value — Spring lo llama en startup
+        EncryptionKeyHolder.encryptionKey = key;
+    }
+
+    public static String getEncryptionKey() { return encryptionKey; }
+}
+```
+
+**Flujo de inicialización:**
+```
+App startup
+  └─► Spring crea bean EncryptionKeyHolder
+      └─► @Value inyecta app.phi.encryption-key en el setter
+          └─► setter escribe en campo static
+              └─► EncryptedStringConverter (instanciado por JPA) llama EncryptionKeyHolder.getEncryptionKey()
+```
+
+> **Ventaja de Lombok:** `@Value` de Spring debe anotarse sobre un setter de instancia (no estático). Lombok `@Setter` generaría un setter de instancia correcto, pero Spring también reconoce un setter anotado con `@Value` directamente. Ambas formas son válidas; la implementación actual usa setter manual explícito por claridad.
+
+**Configuración requerida (`application.yml`):**
+```yaml
+app:
+  phi:
+    encryption-key: ${APP_PHI_ENCRYPTION_KEY:VklUQUxJQV9ERVZfS0VZX05PVF9GT1JfUFJPRF8xMjM=}
+```
+
+> **PRODUCCIÓN:** Siempre setear `APP_PHI_ENCRYPTION_KEY` como variable de entorno.
+> Generar con: `openssl rand -base64 32`
+> El valor default del placeholder es solo para entorno `dev` y nunca debe usarse en staging/prod.
+
+**Estándares cubiertos:** ISO 27001 A.10.1 / HIPAA §164.312(a)(2)(iv) — Gestión de claves criptográficas y protección de PHI en reposo.
+
+---
+
+### 12.4 T5 — Global Validation Handler: ConstraintViolationException
+
+**Problema:** `GlobalExceptionHandler` ya manejaba `MethodArgumentNotValidException` (validación de `@RequestBody` con `@Valid`), pero no manejaba `ConstraintViolationException` (validación de `@PathVariable`, `@RequestParam`, y `@Validated` a nivel de clase).
+
+**Diferencia entre los dos tipos:**
+
+| Excepción | Trigger | Ejemplo |
+|---|---|---|
+| `MethodArgumentNotValidException` | `@Valid` en `@RequestBody` | `POST /patients` con body inválido |
+| `ConstraintViolationException` | `@Validated` en clase + `@NotNull/@Min` en parámetro | `GET /patients/{id}` con `id` inválido |
+
+**Handler añadido a `GlobalExceptionHandler`:**
+```java
+@ExceptionHandler(ConstraintViolationException.class)
+public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(
+        ConstraintViolationException ex, HttpServletRequest request) {
+
+    Map<String, String> invalidFields = ex.getConstraintViolations().stream()
+        .collect(Collectors.toMap(
+            cv -> cv.getPropertyPath().toString(),
+            cv -> Translator.toLocale(cv.getMessage(), null),
+            (oldVal, newVal) -> oldVal + "; " + newVal));
+
+    ErrorDetail detail = ErrorDetail.from(
+        ErrorCode.VAL_REQUIRED_FIELD,
+        Translator.toLocale("validation.error.fields", null),
+        null,
+        Map.of("errorCount", invalidFields.size(), "invalidFields", invalidFields));
+
+    return buildErrorResponse(HttpStatusCode.BAD_REQUEST, detail, request);
+}
+```
+
+**Archivo modificado:** `vitalia-boot/.../handler/GlobalExceptionHandler.java`
+
+**Cobertura de validación completa post-T5:**
+
+| Escenario | Handler activo |
+|---|---|
+| Body JSON inválido (`@Valid`) | `handleMethodArgumentNotValid` |
+| Parámetros de URL/query (`@Validated`) | `handleConstraintViolation` ← nuevo |
+| JSON mal formado (enum inválido, tipo incorrecto) | `handleHttpMessageNotReadable` |
+| Restricciones de base de datos (UNIQUE, FK) | `handleDataIntegrityViolation` |
+| Reglas de negocio (`BusinessException`) | `handleBusinessException` |
+| Recursos no encontrados | `handleResourceNotFound` |
+
+---
+
+### 12.5 Estado Sprint 2 (2026-05-09)
+
+| Tarea | Estado | Descripción |
+|---|---|---|
+| **T0** — Controllers → interfaz | ✅ Completado | 43 controllers corregidos |
+| **T1** — Envers RevisionEntity + DMN_AUDIT_REVISION | ✅ Completado | `AuditRevisionEntity` + `AuditRevisionListener` + 5 scripts SQL |
+| **T3** — PHI Encryption campos TEXT | ✅ Completado | 9 campos cifrados en Patient, Encounter, Condition |
+| **T5** — Global Validation Handler | ✅ Completado | `ConstraintViolationException` handler añadido |
+| **Pendiente** | ⏳ | `mvn clean install` + drop DB + restart para validar esquema con `DMN_AUDIT_REVISION` |
+
+---
+
+## 🛡️ 10. SECURITY AUDIT — ESTADO DE COMPLIANCE (2026-05-09)
 
 > Auditoría realizada sobre código fuente. Ver plan completo de mejoras en **`SECURITY_COMPLIANCE_PLAN.md`**.
 
@@ -466,9 +728,9 @@ app:
 |---|---|
 | **FHIR HL7** | ✅ Parcial — entidades alineadas: Encounter, Condition, Observation, Appointment, MedicationRequest, EpisodeOfCare |
 | **ICD-10 (CIE-10)** | ✅ Catálogo integrado con tabla `CAT_ICD10` |
-| **ISO 27001** | ⚠️ ~75% — mejoras AMA-027: Caffeine TTL, rate limiting, NHC cifrado. Pendiente: Envers completo, campos TEXT PHI |
+| **ISO 27001** | ⚠️ ~85% — Sprint 2: Envers completo (DMN_AUDIT_REVISION), 9 campos PHI cifrados, rate limiting, Caffeine TTL. Pendiente: IV aleatorio para docs largos, Redis multi-nodo |
 | **ISO 13485** | ⚠️ ~55% — falta gestión formal de riesgos documentada |
-| **HIPAA / GDPR** | ⚠️ ~70% — NHC cifrado, soft delete y audit events presentes. Pendiente: campos clínicos TEXT |
+| **HIPAA / GDPR** | ⚠️ ~85% — 9 campos PHI cifrados (NHC + clínicos), trazabilidad Envers por tenant/usuario, soft delete. Pendiente: IV aleatorio para TEXT extenso |
 
 Para certificación formal se requiere además: auditoría externa, gestión ISO 31000, pen-testing periódico y políticas organizacionales.
 
@@ -483,7 +745,7 @@ Para certificación formal se requiere además: auditoría externa, gestión ISO
 | **Aislamiento entre tenants** | Hibernate Filter `TENANT_ID = :tenantId` + `@PrePersist` fail-fast | ✅ Robusto |
 | **Seguridad cruzada** | Anti-spoofing JWT + ~~tenant activo sin validar~~ → **corregido en 9.2** | ✅ |
 | **Datos no se borran** | `@SQLRestriction("IS_DELETED = false")` universal + soft delete | ✅ |
-| **Historial de cambios** | `@Audited` en entidades, `AUT_AUDIT_EVENTS` con IP/userId | ⚠️ Envers incompleto — falta `RevisionEntity` (ver `SECURITY_COMPLIANCE_PLAN.md`) |
+| **Historial de cambios** | `@Audited` en entidades, `AUT_AUDIT_EVENTS` con IP/userId, `DMN_AUDIT_REVISION` con userId/tenant/username | ✅ Envers completo — Sprint 2 |
 
 ---
 

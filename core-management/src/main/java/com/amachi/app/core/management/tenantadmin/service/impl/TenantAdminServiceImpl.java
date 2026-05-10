@@ -13,6 +13,7 @@ import com.amachi.app.core.management.tenantadmin.dto.search.TenantAdminSearchDt
 import com.amachi.app.core.management.tenantadmin.entity.TenantAdmin;
 import com.amachi.app.core.management.tenantadmin.event.TenantAdminCreatedEvent;
 import com.amachi.app.core.management.tenantadmin.repository.TenantAdminRepository;
+import com.amachi.app.core.management.tenantadmin.service.TenantAdminDomainService;
 import com.amachi.app.core.management.tenantadmin.service.TenantAdminService;
 import com.amachi.app.core.management.tenantadmin.specification.TenantAdminSpecification;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TenantAdminServiceImpl extends BaseService<TenantAdmin, TenantAdmin, TenantAdminSearchDto> implements TenantAdminService {
 
     private final TenantAdminRepository repository;
-    private final TenantAdminDomainServiceImpl tenantAdminDomainService;
+    private final TenantAdminDomainService tenantAdminDomainService;
     private final TenantRepository tenantRepository;
     private final DomainEventPublisher eventPublisher;
 
