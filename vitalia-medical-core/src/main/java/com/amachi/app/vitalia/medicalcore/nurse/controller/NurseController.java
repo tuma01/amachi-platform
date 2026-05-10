@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.nurse.dto.NurseDto;
 import com.amachi.app.vitalia.medicalcore.nurse.dto.search.NurseSearchDto;
 import com.amachi.app.vitalia.medicalcore.nurse.entity.Nurse;
 import com.amachi.app.vitalia.medicalcore.nurse.mapper.NurseMapper;
-import com.amachi.app.vitalia.medicalcore.nurse.service.impl.NurseServiceImpl;
+import com.amachi.app.vitalia.medicalcore.nurse.service.NurseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class NurseController extends BaseController implements NurseApi {
 
-    private final NurseServiceImpl service;
+    private final NurseService service;
     private final NurseMapper mapper;
 
     @Override

@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.vaccine.dto.VaccineDto;
 import com.amachi.app.vitalia.medicalcatalog.vaccine.dto.search.VaccineSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.vaccine.entity.Vaccine;
 import com.amachi.app.vitalia.medicalcatalog.vaccine.mapper.VaccineMapper;
-import com.amachi.app.vitalia.medicalcatalog.vaccine.service.impl.VaccineServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.vaccine.service.VaccineService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class VaccineController extends BaseController implements VaccineApi {
 
-    private final VaccineServiceImpl service;
+    private final VaccineService service;
     private final VaccineMapper mapper;
 
     @Override

@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.hospitalization.dto.HospitalizationDto
 import com.amachi.app.vitalia.medicalcore.hospitalization.dto.search.HospitalizationSearchDto;
 import com.amachi.app.vitalia.medicalcore.hospitalization.entity.Hospitalization;
 import com.amachi.app.vitalia.medicalcore.hospitalization.mapper.HospitalizationMapper;
-import com.amachi.app.vitalia.medicalcore.hospitalization.service.impl.HospitalizationServiceImpl;
+import com.amachi.app.vitalia.medicalcore.hospitalization.service.HospitalizationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class HospitalizationController extends BaseController implements HospitalizationApi {
 
-    private final HospitalizationServiceImpl service;
+    private final HospitalizationService service;
     private final HospitalizationMapper mapper;
 
     @Override

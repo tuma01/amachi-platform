@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.medicalhistory.dto.ActualIllnessDto;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.dto.search.IllnessSearchDto;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.entity.ActualIllness;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.mapper.ActualIllnessMapper;
-import com.amachi.app.vitalia.medicalcore.medicalhistory.service.impl.ActualIllnessServiceImpl;
+import com.amachi.app.vitalia.medicalcore.medicalhistory.service.ActualIllnessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class ActualIllnessController extends BaseController implements ActualIllnessApi {
 
-    private final ActualIllnessServiceImpl service;
+    private final ActualIllnessService service;
     private final ActualIllnessMapper mapper;
 
     @Override

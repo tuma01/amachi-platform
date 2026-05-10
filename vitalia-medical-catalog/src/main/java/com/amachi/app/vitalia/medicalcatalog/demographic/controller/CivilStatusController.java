@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.demographic.dto.CivilStatusDto;
 import com.amachi.app.vitalia.medicalcatalog.demographic.dto.search.CivilStatusSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.demographic.entity.CivilStatus;
 import com.amachi.app.vitalia.medicalcatalog.demographic.mapper.CivilStatusMapper;
-import com.amachi.app.vitalia.medicalcatalog.demographic.service.impl.CivilStatusServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.demographic.service.CivilStatusService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CivilStatusController extends BaseController implements CivilStatusApi {
 
-    private final CivilStatusServiceImpl service;
+    private final CivilStatusService service;
     private final CivilStatusMapper mapper;
 
     @Override

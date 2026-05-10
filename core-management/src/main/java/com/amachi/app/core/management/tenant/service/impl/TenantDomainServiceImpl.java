@@ -6,6 +6,7 @@ import com.amachi.app.core.geography.address.entity.Address;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
 import com.amachi.app.core.geography.address.service.impl.AddressServiceImpl;
 import com.amachi.app.core.domain.tenant.dto.TenantDto;
+import com.amachi.app.core.management.tenant.service.TenantDomainService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class TenantDomainServiceImpl {
+public class TenantDomainServiceImpl implements TenantDomainService {
     private final AddressServiceImpl addressService;
     private final AddressMapper addressMapper;
     private final com.amachi.app.core.management.theme.repository.ThemeRepository themeRepository;

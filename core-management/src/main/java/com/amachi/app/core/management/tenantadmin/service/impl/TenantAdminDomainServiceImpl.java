@@ -14,6 +14,7 @@ import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
 import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
 import com.amachi.app.core.management.tenantadmin.dto.TenantAdminDto;
 import com.amachi.app.core.management.tenantadmin.entity.TenantAdmin;
+import com.amachi.app.core.management.tenantadmin.service.TenantAdminDomainService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -24,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @TenantAware
 @RequiredArgsConstructor
 @Slf4j
-public class TenantAdminDomainServiceImpl {
+public class TenantAdminDomainServiceImpl implements TenantAdminDomainService {
 
     private final AddressServiceImpl addressService;
     private final AddressMapper addressMapper;

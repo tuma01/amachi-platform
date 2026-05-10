@@ -3,13 +3,13 @@ package com.amachi.app.core.management.tenantadmin.controller;
 import com.amachi.app.core.common.controller.BaseController;
 import com.amachi.app.core.common.dto.PageResponseDto;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
-import com.amachi.app.core.geography.address.service.impl.AddressServiceImpl;
+import com.amachi.app.core.geography.address.service.AddressService;
 import com.amachi.app.core.management.tenantadmin.dto.TenantAdminDto;
 import com.amachi.app.core.management.tenantadmin.dto.search.TenantAdminSearchDto;
 import com.amachi.app.core.management.tenantadmin.entity.TenantAdmin;
 import com.amachi.app.core.management.tenantadmin.mapper.TenantAdminMapper;
-import com.amachi.app.core.management.tenantadmin.service.impl.TenantAdminDomainServiceImpl;
-import com.amachi.app.core.management.tenantadmin.service.impl.TenantAdminServiceImpl;
+import com.amachi.app.core.management.tenantadmin.service.TenantAdminDomainService;
+import com.amachi.app.core.management.tenantadmin.service.TenantAdminService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,11 +27,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class TenantAdminController extends BaseController implements TenantAdminApi {
 
-    private final TenantAdminServiceImpl service;
+    private final TenantAdminService service;
     private final TenantAdminMapper mapper;
-    private final AddressServiceImpl addressService;
+    private final AddressService addressService;
     private final AddressMapper addressMapper;
-    private final TenantAdminDomainServiceImpl tenantAdminDomainService;
+    private final TenantAdminDomainService tenantAdminDomainService;
 
     @Override
     @PreAuthorize("hasRole('SUPER_ADMIN')")

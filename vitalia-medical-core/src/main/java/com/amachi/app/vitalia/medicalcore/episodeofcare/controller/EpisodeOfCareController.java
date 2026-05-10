@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.episodeofcare.dto.EpisodeOfCareDto;
 import com.amachi.app.vitalia.medicalcore.episodeofcare.dto.search.EpisodeOfCareSearchDto;
 import com.amachi.app.vitalia.medicalcore.episodeofcare.entity.EpisodeOfCare;
 import com.amachi.app.vitalia.medicalcore.episodeofcare.mapper.EpisodeOfCareMapper;
-import com.amachi.app.vitalia.medicalcore.episodeofcare.service.impl.EpisodeOfCareServiceImpl;
+import com.amachi.app.vitalia.medicalcore.episodeofcare.service.EpisodeOfCareService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class EpisodeOfCareController extends BaseController implements EpisodeOfCareApi {
 
-    private final EpisodeOfCareServiceImpl service;
+    private final EpisodeOfCareService service;
     private final EpisodeOfCareMapper mapper;
 
     @Override

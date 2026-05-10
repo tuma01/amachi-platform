@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.habit.dto.PhysiologicalHabitDto;
 import com.amachi.app.vitalia.medicalcore.habit.dto.search.HabitSearchDto;
 import com.amachi.app.vitalia.medicalcore.habit.entity.PhysiologicalHabit;
 import com.amachi.app.vitalia.medicalcore.habit.mapper.PhysiologicalHabitMapper;
-import com.amachi.app.vitalia.medicalcore.habit.service.impl.PhysiologicalHabitServiceImpl;
+import com.amachi.app.vitalia.medicalcore.habit.service.PhysiologicalHabitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class PhysiologicalHabitController extends BaseController implements PhysiologicalHabitApi {
 
-    private final PhysiologicalHabitServiceImpl service;
+    private final PhysiologicalHabitService service;
     private final PhysiologicalHabitMapper mapper;
 
     @Override

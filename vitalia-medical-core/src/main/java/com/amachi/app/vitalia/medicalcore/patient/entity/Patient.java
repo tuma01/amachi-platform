@@ -55,9 +55,11 @@ public class Patient extends AuditableTenantEntity implements Model {
     @Builder.Default
     private PatientStatus patientStatus = PatientStatus.ACTIVE;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "ALLERGY_SUMMARY", columnDefinition = "TEXT")
     private String allergySummary;
 
+    @Convert(converter = EncryptedStringConverter.class)
     @Column(name = "ADDITIONAL_REMARKS", columnDefinition = "TEXT")
     private String additionalRemarks;
 

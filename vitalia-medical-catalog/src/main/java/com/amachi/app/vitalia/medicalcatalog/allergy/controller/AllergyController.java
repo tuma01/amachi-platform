@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.allergy.dto.AllergyDto;
 import com.amachi.app.vitalia.medicalcatalog.allergy.dto.search.AllergySearchDto;
 import com.amachi.app.vitalia.medicalcatalog.allergy.entity.Allergy;
 import com.amachi.app.vitalia.medicalcatalog.allergy.mapper.AllergyMapper;
-import com.amachi.app.vitalia.medicalcatalog.allergy.service.impl.AllergyServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.allergy.service.AllergyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AllergyController extends BaseController implements AllergyApi {
 
-    private final AllergyServiceImpl service;
+    private final AllergyService service;
     private final AllergyMapper mapper;
 
     @Override

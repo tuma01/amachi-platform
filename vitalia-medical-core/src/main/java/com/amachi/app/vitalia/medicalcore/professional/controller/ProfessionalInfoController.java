@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.professional.dto.ProfessionalInfoDto;
 import com.amachi.app.vitalia.medicalcore.professional.dto.search.ProfessionalInfoSearchDto;
 import com.amachi.app.vitalia.medicalcore.professional.entity.ProfessionalInfo;
 import com.amachi.app.vitalia.medicalcore.professional.mapper.ProfessionalInfoMapper;
-import com.amachi.app.vitalia.medicalcore.professional.service.impl.ProfessionalInfoServiceImpl;
+import com.amachi.app.vitalia.medicalcore.professional.service.ProfessionalInfoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class ProfessionalInfoController extends BaseController implements ProfessionalInfoApi {
 
-    private final ProfessionalInfoServiceImpl service;
+    private final ProfessionalInfoService service;
     private final ProfessionalInfoMapper mapper;
 
     @Override

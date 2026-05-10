@@ -5,4 +5,6 @@ import com.amachi.app.core.management.tenantconfig.dto.search.TenantConfigSearch
 import com.amachi.app.core.management.tenantconfig.entity.TenantConfig;
 
 public interface TenantConfigService extends GenericService<TenantConfig, TenantConfig, TenantConfigSearchDto> {
+
+    TenantConfig getByCurrentTenant();
 }

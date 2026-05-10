@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.procedure.dto.MedicalProcedureDto;
 import com.amachi.app.vitalia.medicalcatalog.procedure.dto.search.MedicalProcedureSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.procedure.entity.MedicalProcedure;
 import com.amachi.app.vitalia.medicalcatalog.procedure.mapper.MedicalProcedureMapper;
-import com.amachi.app.vitalia.medicalcatalog.procedure.service.impl.MedicalProcedureServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.procedure.service.MedicalProcedureService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MedicalProcedureController extends BaseController implements MedicalProcedureApi {
 
-    private final MedicalProcedureServiceImpl service;
+    private final MedicalProcedureService service;
     private final MedicalProcedureMapper mapper;
 
     @Override

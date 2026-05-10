@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.identity.dto.IdentificationTypeDto;
 import com.amachi.app.vitalia.medicalcatalog.identity.dto.search.IdentificationTypeSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.identity.entity.IdentificationType;
 import com.amachi.app.vitalia.medicalcatalog.identity.mapper.IdentificationTypeMapper;
-import com.amachi.app.vitalia.medicalcatalog.identity.service.impl.IdentificationTypeServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.identity.service.IdentificationTypeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IdentificationTypeController extends BaseController implements IdentificationTypeApi {
 
-    private final IdentificationTypeServiceImpl service;
+    private final IdentificationTypeService service;
     private final IdentificationTypeMapper mapper;
 
     @Override

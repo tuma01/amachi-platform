@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.medicalhistory.dto.PastIllnessDto;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.dto.search.IllnessSearchDto;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.entity.PastIllness;
 import com.amachi.app.vitalia.medicalcore.medicalhistory.mapper.PastIllnessMapper;
-import com.amachi.app.vitalia.medicalcore.medicalhistory.service.impl.PastIllnessServiceImpl;
+import com.amachi.app.vitalia.medicalcore.medicalhistory.service.PastIllnessService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class PastIllnessController extends BaseController implements PastIllnessApi {
 
-    private final PastIllnessServiceImpl service;
+    private final PastIllnessService service;
     private final PastIllnessMapper mapper;
 
     @Override

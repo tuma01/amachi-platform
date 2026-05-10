@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcatalog.medication.dto.MedicationDto;
 import com.amachi.app.vitalia.medicalcatalog.medication.dto.search.MedicationSearchDto;
 import com.amachi.app.vitalia.medicalcatalog.medication.entity.Medication;
 import com.amachi.app.vitalia.medicalcatalog.medication.mapper.MedicationMapper;
-import com.amachi.app.vitalia.medicalcatalog.medication.service.impl.MedicationServiceImpl;
+import com.amachi.app.vitalia.medicalcatalog.medication.service.MedicationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class MedicationController extends BaseController implements MedicationApi {
 
-    private final MedicationServiceImpl service;
+    private final MedicationService service;
     private final MedicationMapper mapper;
 
     @Override

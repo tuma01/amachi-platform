@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.familyhistory.dto.HereditaryDiseaseDto
 import com.amachi.app.vitalia.medicalcore.familyhistory.dto.search.FamilyHistorySearchDto;
 import com.amachi.app.vitalia.medicalcore.familyhistory.entity.HereditaryDisease;
 import com.amachi.app.vitalia.medicalcore.familyhistory.mapper.HereditaryDiseaseMapper;
-import com.amachi.app.vitalia.medicalcore.familyhistory.service.impl.HereditaryDiseaseServiceImpl;
+import com.amachi.app.vitalia.medicalcore.familyhistory.service.HereditaryDiseaseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class HereditaryDiseaseController extends BaseController implements HereditaryDiseaseApi {
 
-    private final HereditaryDiseaseServiceImpl service;
+    private final HereditaryDiseaseService service;
     private final HereditaryDiseaseMapper mapper;
 
     @Override

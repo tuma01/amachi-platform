@@ -6,7 +6,7 @@ import com.amachi.app.vitalia.medicalcore.consultation.dto.ConsultationDto;
 import com.amachi.app.vitalia.medicalcore.consultation.dto.search.ConsultationSearchDto;
 import com.amachi.app.vitalia.medicalcore.consultation.entity.Consultation;
 import com.amachi.app.vitalia.medicalcore.consultation.mapper.ConsultationMapper;
-import com.amachi.app.vitalia.medicalcore.consultation.service.impl.ConsultationServiceImpl;
+import com.amachi.app.vitalia.medicalcore.consultation.service.ConsultationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 @Slf4j
 public class ConsultationController extends BaseController implements ConsultationApi {
 
-    private final ConsultationServiceImpl service;
+    private final ConsultationService service;
     private final ConsultationMapper mapper;
 
     @Override

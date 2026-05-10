@@ -6,7 +6,7 @@ import com.amachi.app.core.management.tenantconfig.dto.TenantConfigDto;
 import com.amachi.app.core.management.tenantconfig.dto.search.TenantConfigSearchDto;
 import com.amachi.app.core.management.tenantconfig.entity.TenantConfig;
 import com.amachi.app.core.management.tenantconfig.mapper.TenantConfigMapper;
-import com.amachi.app.core.management.tenantconfig.service.impl.TenantConfigServiceImpl;
+import com.amachi.app.core.management.tenantconfig.service.TenantConfigService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -28,7 +28,7 @@ import static java.util.stream.Collectors.toList;
 @Slf4j
 public class TenantConfigController extends BaseController implements TenantConfigApi {
 
-    private final TenantConfigServiceImpl service;
+    private final TenantConfigService service;
     private final TenantConfigMapper mapper;
 
     @Override
