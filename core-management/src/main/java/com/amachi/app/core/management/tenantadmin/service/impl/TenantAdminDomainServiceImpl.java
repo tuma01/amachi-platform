@@ -9,7 +9,7 @@ import com.amachi.app.core.domain.tenant.entity.Tenant;
 import com.amachi.app.core.geography.address.dto.AddressDto;
 import com.amachi.app.core.geography.address.entity.Address;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
-import com.amachi.app.core.geography.address.service.impl.AddressServiceImpl;
+import com.amachi.app.core.geography.address.service.AddressService;
 import com.amachi.app.core.management.provisioning.dto.ProvisioningRequest;
 import com.amachi.app.core.management.provisioning.service.UserProvisioningService;
 import com.amachi.app.core.management.tenantadmin.dto.TenantAdminDto;
@@ -27,7 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Slf4j
 public class TenantAdminDomainServiceImpl implements TenantAdminDomainService {
 
-    private final AddressServiceImpl addressService;
+    private final AddressService addressService;
     private final AddressMapper addressMapper;
     private final PasswordEncoder passwordEncoder;
     private final UserRepository userRepository;

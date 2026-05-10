@@ -1,10 +1,10 @@
 package com.amachi.app.core.management.tenant.service.impl;
 
-import com.amachi.app.core.common.annotation.TenantAware;
 import com.amachi.app.core.common.event.DomainEventPublisher;
 import com.amachi.app.core.common.exception.ResourceNotFoundException;
 import com.amachi.app.core.common.repository.CommonRepository;
 import com.amachi.app.core.common.service.BaseService;
+import com.amachi.app.core.management.tenant.service.TenantDomainService;
 import com.amachi.app.core.management.tenant.service.TenantService;
 import com.amachi.app.core.domain.tenant.dto.TenantDto;
 import com.amachi.app.core.domain.tenant.dto.search.TenantSearchDto;
@@ -26,7 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TenantServiceImpl extends BaseService<Tenant, Tenant, TenantSearchDto> implements TenantService {
 
     private final TenantRepository repository;
-    private final TenantDomainServiceImpl tenantDomainService;
+    private final TenantDomainService tenantDomainService;
     private final DomainEventPublisher eventPublisher;
 
     @Override
