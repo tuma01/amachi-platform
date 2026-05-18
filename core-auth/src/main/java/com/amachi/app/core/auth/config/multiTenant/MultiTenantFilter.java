@@ -27,6 +27,8 @@ public class MultiTenantFilter extends OncePerRequestFilter {
     /**
      * Rutas que no requieren resolución de tenant:
      * infraestructura técnica (docs, health) y endpoints globales sin scope de tenant.
+     * NOTA: /auth/** NO está aquí — el tenantCode llega en el header X-Tenant-Code
+     * y MultiTenantFilter debe procesarlo para setear TenantContext antes del login.
      */
     private static final List<String> NO_TENANT_PATHS = List.of(
             "/tenants/**",

@@ -20,6 +20,8 @@ public interface BedMapper extends EntityDtoMapper<Bed, BedDto> {
     @BeanMapping(unmappedTargetPolicy = ReportingPolicy.IGNORE)
     @Mapping(target = "roomId",     source = "room.id")
     @Mapping(target = "roomNumber", source = "room.roomNumber")
+    @Mapping(target = "blockFloor", source = "room.blockFloor")
+    @Mapping(target = "unitName",   source = "room.unit.name")
     BedDto toDto(Bed entity);
 
     @Override

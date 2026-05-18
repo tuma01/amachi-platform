@@ -53,17 +53,20 @@ public class BootstrapService {
             Tenant globalTenant = createOrUpdateTenant(appBootstrapProperties.getTenant().getTenantGlobal(),
                     defaultTheme);
 
-            // 2. SuperAdmin (Composition)
-            // Se mantiene el contexto SYSTEM para que la resolución de User/Person sea
-            // global
+            // 2. SuperAdmin — contexto del tenant GLOBAL para que PersonTenant.TENANT_ID sea correcto
+            TenantContext.setTenantId(globalTenant.getId());
+            TenantContext.setTenantCode(globalTenant.getCode());
             createSuperAdminElite(appBootstrapProperties.getSuperAdmin(), globalTenant);
 
             // 3. LOCAL Tenant (Standard Hospital)
+            TenantContext.setTenantId(0L);
+            TenantContext.setTenantCode("SYSTEM");
             Tenant localTenant = createOrUpdateTenant(appBootstrapProperties.getTenant().getTenantLocal(),
                     defaultTheme);
 
-            // 4. TenantAdmin (Composition)
-            // Se mantiene el contexto SYSTEM
+            // 4. TenantAdmin — contexto del tenant LOCAL para que PersonTenant.TENANT_ID sea correcto
+            TenantContext.setTenantId(localTenant.getId());
+            TenantContext.setTenantCode(localTenant.getCode());
             createTenantAdminElite(appBootstrapProperties.getTenantAdmin(), localTenant);
 
             log.info("🚀 Hardened Elite Bootstrap finalizado con éxito");
@@ -147,6 +150,9 @@ public class BootstrapService {
         if (tenant.getTheme() == null) {
             tenant.setTheme(defaultTheme);
         }
+
+        // El tenant debe estar activo tras el bootstrap, incluso si ya existía como inactivo
+        tenant.setActive(true);
 
         return tenantRepository.save(tenant);
     }

@@ -42,6 +42,10 @@ public interface InsuranceApi extends GenericApi<InsuranceDto> {
     @Operation(summary = "Get all " + NAME_API)
     ResponseEntity<List<InsuranceDto>> getAllInsurances();
 
+    @GetMapping(value = "/by-patient/{patientId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Operation(summary = "Get all insurances for a specific patient")
+    ResponseEntity<List<InsuranceDto>> getInsurancesByPatient(@PathVariable("patientId") @NonNull Long patientId);
+
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     @Operation(summary = "Get paginated " + NAME_API)
     ResponseEntity<PageResponseDto<InsuranceDto>> getPaginatedInsurances(

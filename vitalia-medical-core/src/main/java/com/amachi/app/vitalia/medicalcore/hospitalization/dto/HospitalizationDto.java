@@ -115,7 +115,16 @@ public class HospitalizationDto {
     @Schema(description = "Observaciones clínicas adicionales")
     private String observations;
 
-    @Schema(description = "Número de autorización del seguro", example = "AUTH-12345-XYZ")
+    @Schema(description = "ID del seguro del paciente que cubre esta hospitalización", example = "10")
+    private Long insuranceId;
+
+    @Schema(description = "Nombre de la aseguradora (Solo lectura)", example = "Caja Nacional de Salud", accessMode = Schema.AccessMode.READ_ONLY)
+    private String providerName;
+
+    @Schema(description = "Número de póliza del seguro (Solo lectura)", example = "POL-CNS-2026-001", accessMode = Schema.AccessMode.READ_ONLY)
+    private String policyNumber;
+
+    @Schema(description = "Número de autorización emitido por la aseguradora para esta hospitalización", example = "CNS-AUTH-2026-00547")
     private String insuranceAuthorizationNumber;
 
     @Schema(description = "Costo acumulado (Solo lectura)", example = "1500.50", accessMode = Schema.AccessMode.READ_ONLY)

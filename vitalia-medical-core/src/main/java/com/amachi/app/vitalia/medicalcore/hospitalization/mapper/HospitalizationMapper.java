@@ -20,6 +20,7 @@ public interface HospitalizationMapper extends EntityDtoMapper<Hospitalization, 
     @Mapping(target = "unit",      ignore = true)
     @Mapping(target = "room",      ignore = true)
     @Mapping(target = "bed",       ignore = true)
+    @Mapping(target = "insurance", ignore = true)
     Hospitalization toEntity(HospitalizationDto dto);
 
     @Override
@@ -37,6 +38,9 @@ public interface HospitalizationMapper extends EntityDtoMapper<Hospitalization, 
     @Mapping(target = "roomNumber",      source = "room.roomNumber")
     @Mapping(target = "bedId",           source = "bed.id")
     @Mapping(target = "bedCode",         source = "bed.bedCode")
+    @Mapping(target = "insuranceId",     source = "insurance.id")
+    @Mapping(target = "providerName",    source = "insurance.provider.name")
+    @Mapping(target = "policyNumber",    source = "insurance.policyNumber")
     @Mapping(target = "lengthOfStayInDays", expression = "java(entity.getLengthOfStayInDays())")
     HospitalizationDto toDto(Hospitalization entity);
 
@@ -51,5 +55,6 @@ public interface HospitalizationMapper extends EntityDtoMapper<Hospitalization, 
     @Mapping(target = "unit",      ignore = true)
     @Mapping(target = "room",      ignore = true)
     @Mapping(target = "bed",       ignore = true)
+    @Mapping(target = "insurance", ignore = true)
     void updateEntityFromDto(HospitalizationDto dto, @MappingTarget Hospitalization entity);
 }

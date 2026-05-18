@@ -90,12 +90,12 @@ public class SecurityConfig {
                                                         "/municipalities/**", "/addresses/**")
                                                 .hasRole("SUPER_ADMIN");
 
-                                        auth.requestMatchers("/employee/**").hasRole("ADMIN");
-                                        auth.requestMatchers("/user/**").hasAnyRole("USER", "ADMIN", "SUPER_ADMIN");
-                                        auth.requestMatchers(HttpMethod.GET, "/doctor/**").hasAnyRole("DOCTOR", "ADMIN");
-                                        auth.requestMatchers(HttpMethod.POST, "/doctor/**").hasRole("DOCTOR");
-                                        auth.requestMatchers("/nurse/**").hasAnyRole("NURSE", "DOCTOR", "ADMIN");
-                                        auth.requestMatchers("/patient/**").hasAnyRole("PATIENT", "DOCTOR", "NURSE", "ADMIN");
+                                        auth.requestMatchers("/employee/**").hasAnyRole("ADMIN", "TENANT_ADMIN");
+                                        auth.requestMatchers("/user/**").hasAnyRole("USER", "ADMIN", "TENANT_ADMIN", "SUPER_ADMIN");
+                                        auth.requestMatchers(HttpMethod.GET, "/doctor/**").hasAnyRole("DOCTOR", "ADMIN", "TENANT_ADMIN");
+                                        auth.requestMatchers(HttpMethod.POST, "/doctor/**").hasAnyRole("DOCTOR", "TENANT_ADMIN");
+                                        auth.requestMatchers("/nurse/**").hasAnyRole("NURSE", "DOCTOR", "ADMIN", "TENANT_ADMIN");
+                                        auth.requestMatchers("/patient/**").hasAnyRole("PATIENT", "DOCTOR", "NURSE", "ADMIN", "TENANT_ADMIN");
                                         auth.requestMatchers("/tenantConfigs/**").hasAnyRole("ADMIN", "TENANT_ADMIN", "SUPER_ADMIN");
 
                                         // --- 🔒 CUALQUIER OTRO ENDPOINT REQUIERE AUTENTICACIÓN ---

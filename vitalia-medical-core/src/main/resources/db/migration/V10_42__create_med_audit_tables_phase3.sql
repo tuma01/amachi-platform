@@ -317,6 +317,7 @@ CREATE TABLE IF NOT EXISTS MED_HOSPITALIZATION_AUD (
     FK_ID_UNIT                  BIGINT,
     FK_ID_ROOM                  BIGINT,
     FK_ID_BED                   BIGINT,
+    FK_ID_INSURANCE             BIGINT NULL,
     ADMISSION_DATE              DATETIME(6),
     DISCHARGE_DATE              DATETIME(6),
     ESTIMATED_DISCHARGE_DATE    DATETIME(6),

@@ -29,6 +29,24 @@ public class InsuranceDto {
     @Schema(description = "Nombre del proveedor (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
     private String providerName;
 
+    @Schema(description = "Teléfono central de autorizaciones (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private String providerPhone;
+
+    @Schema(description = "Línea de emergencias 24h (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private String providerEmergencyPhone;
+
+    @Schema(description = "Correo institucional (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private String providerEmail;
+
+    @Schema(description = "Portal web institucional (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private String providerWebsite;
+
+    @Schema(description = "Nombre completo del paciente (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private String patientFullName;
+
+    @Schema(description = "Número de historia clínica (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private String historyNumber;
+
     @Schema(description = "Número de póliza", example = "POL-2026-00123")
     private String policyNumber;
 

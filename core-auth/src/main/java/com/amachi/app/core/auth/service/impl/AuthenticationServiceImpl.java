@@ -131,13 +131,12 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     }
 
     private String resolveTenantForLogin(User user) {
+        // TenantContext ya fue seteado por MultiTenantFilter desde el header X-Tenant-Code
         String tenantCode = TenantContext.getTenantCode();
         if (tenantCode != null && !tenantCode.isBlank()) {
             return tenantCode;
         }
-        // El MultiTenantFilter garantiza que el contexto siempre está presente.
-        // Si llegamos aquí es un fallo de configuración del filter, no de negocio.
-        log.error("⚠️ TenantContext vacío en login para user={}. Verificar MultiTenantFilter.", user.getEmail());
+        log.error("⚠️ TenantCode no encontrado en TenantContext. Verificar header X-Tenant-Code. user={}", user.getEmail());
         throw new AppSecurityException(ErrorCode.SEC_INVALID_OPERATION, "security.tenant.required_for_user");
     }
 
