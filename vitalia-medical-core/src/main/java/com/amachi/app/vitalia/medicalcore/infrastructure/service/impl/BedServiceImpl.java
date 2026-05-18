@@ -56,6 +56,8 @@ public class BedServiceImpl
         }
 
         Bed bed = mapper.toEntity(dto);
+        bed.setIsOccupied(false);
+        if (bed.getActive() == null) bed.setActive(true);
         bed.setRoom(entityManager.getReference(Room.class, dto.getRoomId()));
         return repository.save(bed);
     }

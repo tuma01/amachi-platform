@@ -10,4 +10,5 @@ import java.util.List;
 public interface InsuranceRepository extends TenantCommonRepository<Insurance, Long> {
     List<Insurance> findByMedicalHistoryIdAndTenantId(Long medicalHistoryId, Long tenantId);
     List<Insurance> findByMedicalHistoryIdAndIsCurrentTrueAndTenantId(Long medicalHistoryId, Long tenantId);
+    List<Insurance> findByMedicalHistoryPatientIdAndTenantId(Long patientId, Long tenantId);
 }

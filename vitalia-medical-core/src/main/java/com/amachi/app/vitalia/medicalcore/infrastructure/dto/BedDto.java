@@ -24,6 +24,12 @@ public class BedDto {
     @Schema(description = "Número visible de la habitación (solo lectura)", example = "301-A", accessMode = Schema.AccessMode.READ_ONLY)
     private String roomNumber;
 
+    @Schema(description = "Nombre de la unidad hospitalaria (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private String unitName;
+
+    @Schema(description = "Piso de la habitación (solo lectura)", accessMode = Schema.AccessMode.READ_ONLY)
+    private Integer blockFloor;
+
     @NotBlank(message = "Número de cama {err.mandatory}")
     @Schema(description = "Número rotulado físicamente en la cama", example = "01")
     private String bedNumber;

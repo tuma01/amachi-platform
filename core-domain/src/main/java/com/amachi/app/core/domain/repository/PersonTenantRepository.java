@@ -18,10 +18,14 @@ import java.util.Optional;
 @Repository
 public interface PersonTenantRepository
         extends TenantCommonRepository<PersonTenant, Long> {
-    Page<PersonTenant> findByTenantId(Long tenantId, Pageable pageable);
+    @Query("SELECT pt FROM PersonTenant pt WHERE pt.tenant.id = :tenantId")
+    Page<PersonTenant> findByTenantId(@Param("tenantId") Long tenantId, Pageable pageable);
 
-    Optional<PersonTenant> findByPersonIdAndTenantId(Long personId, Long tenantId);
-    Optional<PersonTenant> findByPersonIdAndTenantCode(Long personId, String tenantCode);
+    @Query("SELECT pt FROM PersonTenant pt WHERE pt.person.id = :personId AND pt.tenant.id = :tenantId")
+    Optional<PersonTenant> findByPersonIdAndTenantId(@Param("personId") Long personId, @Param("tenantId") Long tenantId);
+
+    @Query("SELECT pt FROM PersonTenant pt WHERE pt.person.id = :personId AND pt.tenant.code = :tenantCode")
+    Optional<PersonTenant> findByPersonIdAndTenantCode(@Param("personId") Long personId, @Param("tenantCode") String tenantCode);
 
     Optional<PersonTenant> findByPersonAndTenant(Person person, Tenant tenant);
 

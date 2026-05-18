@@ -54,6 +54,13 @@ public class InsuranceController extends BaseController implements InsuranceApi 
     }
 
     @Override
+    public ResponseEntity<List<InsuranceDto>> getInsurancesByPatient(@NonNull Long patientId) {
+        return ResponseEntity.ok(
+            service.getInsurancesByPatient(patientId).stream().map(mapper::toDto).toList()
+        );
+    }
+
+    @Override
     public ResponseEntity<PageResponseDto<InsuranceDto>> getPaginatedInsurances(@NonNull InsuranceSearchDto searchDto, Integer pageIndex, Integer pageSize) {
         Page<Insurance> page = service.getAll(searchDto, pageIndex, pageSize);
         return ResponseEntity.ok(PageResponseDto.<InsuranceDto>builder()

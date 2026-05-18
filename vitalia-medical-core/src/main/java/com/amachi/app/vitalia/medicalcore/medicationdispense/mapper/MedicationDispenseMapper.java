@@ -29,7 +29,7 @@ public interface MedicationDispenseMapper extends EntityDtoMapper<MedicationDisp
     @Mapping(target = "dispenserId",      source = "dispenser.id")
     @Mapping(target = "dispenserFullName",expression = "java(entity.getDispenser() != null && entity.getDispenser().getPerson() != null ? entity.getDispenser().getPerson().getFirstName() + \" \" + (entity.getDispenser().getPerson().getLastName() != null ? entity.getDispenser().getPerson().getLastName() : \"\") : null)")
     @Mapping(target = "medicationId",     source = "medication.id")
-    @Mapping(target = "medicationName",   source = "medication.name")
+    @Mapping(target = "medicationName",   source = "medication.genericName")
     MedicationDispenseDto toDto(MedicationDispense entity);
 
     @Override

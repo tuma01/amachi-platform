@@ -26,6 +26,8 @@ import com.amachi.app.vitalia.medicalcore.infrastructure.repository.BedRepositor
 import com.amachi.app.vitalia.medicalcore.infrastructure.repository.DepartmentUnitRepository;
 import com.amachi.app.vitalia.medicalcore.infrastructure.repository.RoomRepository;
 import com.amachi.app.vitalia.medicalcore.infrastructure.service.BedService;
+import com.amachi.app.vitalia.medicalcore.insurance.entity.Insurance;
+import com.amachi.app.vitalia.medicalcore.insurance.repository.InsuranceRepository;
 import com.amachi.app.vitalia.medicalcore.nurse.entity.Nurse;
 import com.amachi.app.vitalia.medicalcore.nurse.repository.NurseRepository;
 import com.amachi.app.vitalia.medicalcore.patient.entity.Patient;
@@ -59,6 +61,7 @@ public class HospitalizationServiceImpl
     private final RoomRepository roomRepository;
     private final BedRepository bedRepository;
     private final BedService bedService;
+    private final InsuranceRepository insuranceRepository;
 
     @PersistenceContext
     private final EntityManager entityManager;
@@ -203,6 +206,13 @@ public class HospitalizationServiceImpl
             entity.setBed(entityManager.getReference(Bed.class, dto.getBedId()));
         } else {
             entity.setBed(null);
+        }
+        if (dto.getInsuranceId() != null) {
+            if (!insuranceRepository.existsByIdAndTenantId(dto.getInsuranceId(), tenantId))
+                throw new BusinessException("Seguro no encontrado con ID: " + dto.getInsuranceId());
+            entity.setInsurance(entityManager.getReference(Insurance.class, dto.getInsuranceId()));
+        } else {
+            entity.setInsurance(null);
         }
     }
 }

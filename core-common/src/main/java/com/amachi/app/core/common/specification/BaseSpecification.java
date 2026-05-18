@@ -30,7 +30,7 @@ public abstract class BaseSpecification<T> implements Specification<T> {
 
         // 🛡️ Filtro soft delete automático (Solo si la entidad es SoftDeletable)
         if (SoftDeletable.class.isAssignableFrom(root.getJavaType())) {
-            predicates.add(cb.equal(root.get("isDeleted"), false));
+            predicates.add(cb.equal(root.get("deleted"), false));
         }
 
         return predicates;

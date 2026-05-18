@@ -5,10 +5,12 @@ import com.amachi.app.core.common.mapper.BaseMapperConfig;
 import com.amachi.app.core.domain.dto.PersonDto;
 import com.amachi.app.core.domain.entity.Person;
 import com.amachi.app.core.geography.address.mapper.AddressMapper;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Builder;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 /**
  * Mapper central para la Identidad Global (Person).
@@ -23,5 +25,8 @@ public interface PersonMapper {
 
     PersonDto toDto(Person entity);
 
+    @AuditableIgnoreConfig.IgnorePureAuditableFields
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
+    @Mapping(target = "id", ignore = true)
     void updateEntityFromDto(PersonDto dto, @MappingTarget Person entity);
 }

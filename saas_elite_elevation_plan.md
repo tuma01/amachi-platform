@@ -431,7 +431,7 @@ app:
 
 ---
 
-*Last update: 2026-05-09 - Sprint 1 completado + Sprint 2 en ejecución (AMA-029). App 100% funcional.*
+*Last update: 2026-05-10 - AMA-029→032 completados. Backend demo-ready. Frontend en curso (AMA-033).*
 
 ---
 
@@ -693,7 +693,192 @@ public ResponseEntity<ApiResponse<Void>> handleConstraintViolation(
 | **T1** — Envers RevisionEntity + DMN_AUDIT_REVISION | ✅ Completado | `AuditRevisionEntity` + `AuditRevisionListener` + 5 scripts SQL |
 | **T3** — PHI Encryption campos TEXT | ✅ Completado | 9 campos cifrados en Patient, Encounter, Condition |
 | **T5** — Global Validation Handler | ✅ Completado | `ConstraintViolationException` handler añadido |
-| **Pendiente** | ⏳ | `mvn clean install` + drop DB + restart para validar esquema con `DMN_AUDIT_REVISION` |
+| **App arrancando** | ✅ | `mvn clean install` OK · `ddl-auto: validate` OK · Flyway V1–V10_42 OK |
+
+---
+
+## 🔧 13. DEUDA TÉCNICA — INTERFACES DE SERVICIO (AMA-030 / 2026-05-09)
+
+**Problema:** El T0 del Sprint 2 corrigió los controllers, pero quedaron 5 inyecciones de `*ServiceImpl` directas en capas de servicio (service-to-service). Además faltaban las interfaces para los DomainServices del módulo `core-management`.
+
+**Fixes aplicados:**
+
+| Archivo | Fix |
+|---|---|
+| `SuperAdminDomainService` | ✅ Interfaz creada — métodos: `encodePasswordIfNeeded`, `completeAccountSetup` |
+| `SuperAdminDomainServiceImpl` | ✅ `implements SuperAdminDomainService` |
+| `SuperAdminServiceImpl` | ✅ Inyecta `SuperAdminDomainService` (no Impl) |
+| `TenantServiceImpl` | ✅ Inyecta `TenantDomainService` (no Impl) |
+| `TenantAdminServiceImpl` | ✅ Inyecta `TenantAdminDomainService` (no Impl) |
+| `TenantDomainServiceImpl` | ✅ Inyecta `AddressService` (no `AddressServiceImpl`) |
+| `TenantAdminDomainServiceImpl` | ✅ Inyecta `AddressService` (no `AddressServiceImpl`) |
+| `BootstrapService` | ✅ Inyecta `TenantDomainService` (no Impl) |
+
+**Residuo aceptado:** `JwtAuthenticationFilter` referencia `JwtServiceImpl.TokenException` — es un tipo anidado, no inyección de servicio. Se extrae cuando `TokenException` sea promovida a clase standalone.
+
+---
+
+## ✅ 14. VALIDACIONES DE DTOs CLÍNICOS (AMA-031 / 2026-05-09)
+
+**Problema:** Los DTOs clínicos tenían `@NotNull`/`@NotBlank` en campos obligatorios pero ninguna restricción de tamaño, formato ni rango numérico.
+
+**DTOs validados — resumen:**
+
+| DTO | Anotaciones añadidas |
+|---|---|
+| `PatientDto` | `@Size` en 9 campos, `@Pattern` en `nhc` (`^[A-Za-z0-9\-]{2,50}$`), `@Email` en emergencyContactEmail, `@Min/@Max` en gestationalWeeks (0-45) e childrenCount |
+| `EncounterDto` | `@Size(max=5000)` en 5 campos TEXT clínicos, `@Size(max=50)` en triageLevel |
+| `ConditionDto` | `@Size(max=255)` en name, `@Size(max=5000)` en symptoms y treatmentNotes |
+| `AppointmentDto` | `@Size(max=2000)` en reason y cancelReason |
+| `ObservationDto` | `@Size` en code, name, value, unit, referenceRange, interpretation, notes |
+| `MedicalHistoryDto` | `@Size` + `@Pattern` en historyNumber, `@Size` en confidentialityLevel, observations, notes |
+
+**Criterios:**
+- `@Size(max=N)` alineado a `length=N` del `@Column` en la entidad → previene `DataTruncationException` antes de llegar a BD
+- `@Pattern` solo en campos de código estructurado → previene injection
+- `@Email` en emails · `@Min/@Max` en rangos clínicos con límites físicos conocidos
+
+---
+
+## 🏥 15. FUNCIONALIDAD CLÍNICA AMA-032 (2026-05-09)
+
+### 15.1 Part A — ClinicalHistoryStream (Timeline 360°)
+
+**Qué es:** Vista agregada de lectura que consolida todos los eventos clínicos de un paciente desde múltiples dominios, ordenados cronológicamente.
+
+**Sin tabla nueva en BD** — agrega datos de: `MED_ENCOUNTER`, `MED_CONDITION`, `MED_OBSERVATION`, `MED_PRESCRIPTION`, `MED_HOSPITALIZATION`, `MED_CONSULTATION`.
+
+**Endpoints:**
+
+| Endpoint | Descripción |
+|---|---|
+| `GET /patients/{id}/timeline` | Todos los eventos del paciente, más reciente primero |
+| `GET /patients/{id}/timeline?type=ENCOUNTER` | Filtrado por tipo de evento |
+| `GET /patients/{id}/summary` | Resumen ejecutivo: condiciones activas, prescripciones vigentes, último encuentro |
+
+**Tipos de evento (`ClinicalEventType`):** `ENCOUNTER`, `CONDITION`, `OBSERVATION`, `PRESCRIPTION`, `MEDICATION_DISPENSE`, `MEDICATION_ADMINISTRATION`, `HOSPITALIZATION`, `CONSULTATION`.
+
+**Condiciones "activas":** `ClinicalStatus.ACTIVE` + `ClinicalStatus.RELAPSE` (no `INACTIVE`, `RESOLVED`, `REMITTED`).
+
+**Archivos creados:**
+- `clinicalhistory/dto/ClinicalEventDto.java`
+- `clinicalhistory/dto/ClinicalSummaryDto.java`
+- `clinicalhistory/service/ClinicalTimelineService.java`
+- `clinicalhistory/service/impl/ClinicalTimelineServiceImpl.java`
+- `clinicalhistory/controller/ClinicalTimelineApi.java` + `ClinicalTimelineController.java`
+
+---
+
+### 15.2 Part C — Flujo completo del medicamento (FHIR)
+
+**Cadena implementada:**
+
+```
+Prescription (médico prescribe)
+    → MedicationDispense (farmacia/enfermería entrega)
+        → MedicationAdministration (enfermería aplica la dosis)
+```
+
+Esta cadena cubre el **FHIR R4 Medication Workflow** completo.
+
+**MedicationDispense** (`MED_MEDICATION_DISPENSE` · V10_43):
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `FK_ID_PRESCRIPTION` | BIGINT NOT NULL | Prescripción origen |
+| `FK_ID_DISPENSER` | BIGINT | Médico/farmacéutico que dispensó |
+| `STATUS` | VARCHAR(30) | `PREPARATION`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`... |
+| `QUANTITY` | DECIMAL(10,2) | Cantidad dispensada |
+| `LOT_NUMBER` | VARCHAR(50) | Número de lote del medicamento |
+| `DISPENSED_AT` | DATETIME(6) | Timestamp de dispensación |
+| `HANDED_OVER_AT` | DATETIME(6) | Timestamp de entrega física al paciente |
+
+**MedicationAdministration** (`MED_MEDICATION_ADMINISTRATION` · V10_44):
+
+| Campo | Tipo | Descripción |
+|---|---|---|
+| `FK_ID_PRESCRIPTION` | BIGINT NOT NULL | Prescripción origen |
+| `FK_ID_DISPENSE` | BIGINT | Dispensación que originó esta dosis (opcional) |
+| `FK_ID_NURSE` | BIGINT | Enfermera que administró |
+| `STATUS` | VARCHAR(30) | `COMPLETED`, `NOT_DONE`, `STOPPED`... |
+| `ADMINISTERED_AT` | DATETIME(6) | Timestamp de administración |
+| `DOSE_QUANTITY` | DECIMAL(10,2) | Dosis administrada |
+| `ROUTE` | VARCHAR(50) | Vía de administración (oral, IV, IM...) |
+
+**Nuevas tablas de auditoría** (V10_45): `MED_MEDICATION_DISPENSE_AUD` + `MED_MEDICATION_ADMINISTRATION_AUD`.
+
+**Nuevos enums creados:** `DispenseStatus`, `AdministrationStatus`, `ClinicalEventType`.
+
+---
+
+## 🎯 16. BACKEND DEMO-READY (2026-05-10)
+
+> Estado: **listo para primera presentación a clientes**.
+> Ver plan de Lab pendiente en **`AMA-033_LAB_MODULE_PLAN.md`**.
+
+### 16.1 Flujo clínico mínimo vendible
+
+```
+Login (multi-tenant) → Dashboard
+  → Registrar Paciente (NHC, datos personales, contacto emergencia)
+  → Agendar Cita (médico, sala, fecha/hora)
+  → Crear Encuentro clínico
+      → Añadir Diagnóstico CIE-10 (Condition)
+      → Registrar Observación / Signo vital (Observation)
+      → Emitir Prescripción (Prescription)
+      → Dispensar medicamento (MedicationDispense)
+      → Registrar administración (MedicationAdministration)
+  → Ver Historia Clínica 360° (ClinicalTimeline) ← WOW FACTOR
+```
+
+### 16.2 Dominios disponibles hoy (backend completo)
+
+| Dominio | Tabla | Endpoints | FHIR |
+|---|---|---|---|
+| Multi-tenancy | DMN_TENANT | Login, registro, activación | — |
+| Paciente | MED_PATIENT | CRUD + NHC cifrado | Patient |
+| Expediente clínico | MED_MEDICAL_HISTORY | CRUD + auto-cierre anterior | — |
+| Enfermedad actual | MED_ACTUAL_ILLNESS | CRUD | — |
+| Antecedentes | MED_PAST_ILLNESS | CRUD | — |
+| Historial familiar | MED_FAMILY_HISTORY + MED_HEREDITARY_DISEASE | CRUD | — |
+| Hábitos | MED_PHYSIOLOGICAL_HABIT + MED_TOXIC_HABIT | CRUD | — |
+| Seguros | MED_INSURANCE | CRUD | — |
+| Cita | MED_APPOINTMENT | CRUD + checkIn + updateStatus | Appointment |
+| Recordatorios | MED_APPOINTMENT_REMINDER | CRUD | — |
+| Encuentro | MED_ENCOUNTER | CRUD + start + complete + cancel | Encounter |
+| Diagnóstico | MED_CONDITION + CAT_ICD10 | CRUD por paciente/encuentro | Condition |
+| Observación | MED_OBSERVATION | CRUD por paciente/encuentro | Observation |
+| Prescripción | MED_PRESCRIPTION | CRUD por paciente/encuentro | MedicationRequest |
+| Dispensación | MED_MEDICATION_DISPENSE | CRUD + getByPrescription | MedicationDispense |
+| Administración dosis | MED_MEDICATION_ADMINISTRATION | CRUD + getByPrescription | MedicationAdministration |
+| Hospitalización | MED_HOSPITALIZATION | CRUD + dischargePatient | — |
+| Alta medicamentos | MED_DISCHARGE_MEDICATION | CRUD | — |
+| Consulta | MED_CONSULTATION | CRUD + getByPatient | — |
+| Episodio de cuidado | MED_EPISODE_OF_CARE | CRUD | EpisodeOfCare |
+| Médico | MED_DOCTOR | CRUD | Practitioner |
+| Enfermera | MED_NURSE | CRUD | Practitioner |
+| Empleado | MED_EMPLOYEE | CRUD | — |
+| Infraestructura | MED_DEPARTMENT_UNIT + MED_ROOM + MED_BED | CRUD | — |
+| Organización | MED_ORGANIZATION | CRUD | Organization |
+| Hospital | MED_HOSPITAL | CRUD | Organization |
+| **Historia 360°** | *(cross-domain)* | `/patients/{id}/timeline` · `/summary` | — |
+| Catálogos | CAT_ICD10, CAT_MEDICATION, CAT_ALLERGY... | CRUD + búsqueda | — |
+
+### 16.3 Seguridad activa en la demo
+
+- JWT stateless + blacklist de tokens
+- Rate limiting: 10 req/min en `/auth/login` y `/auth/refresh`
+- Anti-spoofing multi-tenant (tenantCode del token vs header)
+- NHC cifrado AES-256 en base de datos
+- 8 campos clínicos adicionales cifrados (diagnósticos, síntomas, notas)
+- Trazabilidad de cambios: quién, cuándo, en qué tenant (Envers → `DMN_AUDIT_REVISION`)
+- Validación de entrada en todos los DTOs clínicos (`@Size`, `@Pattern`, `@Email`)
+
+### 16.4 Próximo paso confirmado
+
+**AMA-033 = Frontend** — flujo mínimo vendible conectado al backend.
+Lab Module → diferido a **AMA-034** (después de primera demo con cliente real).
+Ver decisiones pendientes en `AMA-033_LAB_MODULE_PLAN.md`.
 
 ---
 
@@ -767,7 +952,7 @@ Para certificación formal se requiere además: auditoría externa, gestión ISO
 
 ## 🏥 11. COBERTURA DE GESTIÓN HOSPITALARIA
 
-### 11.1 Dominios implementados (~60-65% de un HIS completo)
+### 11.1 Dominios implementados (~75% de un HIS completo — actualizado AMA-032)
 
 | Dominio | Módulo | Estado |
 |---|---|---|
@@ -780,7 +965,10 @@ Para certificación formal se requiere además: auditoría externa, gestión ISO
 | Encuentros clínicos (FHIR) | Encounter | ✅ |
 | Diagnósticos CIE-10 | Condition + CAT_ICD10 | ✅ |
 | Observaciones clínicas | Observation | ✅ |
-| Prescripciones | Prescription | ✅ |
+| Prescripciones (FHIR MedicationRequest) | Prescription | ✅ |
+| Dispensación medicamentos (FHIR MedicationDispense) | MedicationDispense | ✅ AMA-032 |
+| Administración de dosis (FHIR MedicationAdministration) | MedicationAdministration | ✅ AMA-032 |
+| Historia clínica 360° (Timeline) | ClinicalHistoryStream | ✅ AMA-032 |
 | Internación | Hospitalization, DischargeMedication | ✅ |
 | Consultas médicas | Consultation | ✅ |
 | Episodio de cuidado (FHIR) | EpisodeOfCare | ✅ |
@@ -790,17 +978,17 @@ Para certificación formal se requiere además: auditoría externa, gestión ISO
 
 ### 11.2 Dominios faltantes para HIS completo
 
-| Dominio | Prioridad |
-|---|---|
-| **Quirófano / Cirugía** — programación quirúrgica, equipos | Alta |
-| **Laboratorio clínico** — órdenes, resultados, rangos de referencia | Alta |
-| **Farmacia intrahospitalaria** — stock, dispensación, kardex enfermería | Alta |
-| **Imágenes / Radiología** — DICOM, órdenes de imagen | Media |
-| **Urgencias / Triage Manchester** — gestión sala emergencias | Media |
-| **UCI / Monitoreo** — signos vitales continuos | Media |
-| **Facturación / Liquidación** — tarifarios, cuentas corrientes | Media |
-| **Consentimientos informados** — firmas digitales, formularios legales | Baja |
-| **Estadísticas hospitalarias** — GRD, estancia media, indicadores OPS | Baja |
-| **Notificaciones epidemiológicas** — declaración obligatoria | Baja |
+| Dominio | Prioridad | Nota |
+|---|---|---|
+| **Laboratorio clínico** — órdenes, resultados, rangos de referencia | Alta | ⏳ Diferido post-demo — ver `AMA-033_LAB_MODULE_PLAN.md` |
+| **Quirófano / Cirugía** — programación quirúrgica, equipos | Alta | Integración externa (PACS/SIF) recomendada |
+| **Farmacia — Stock/Inventario** — kardex físico, entradas/salidas | Media | Dispensación clínica ya implementada en AMA-032 |
+| **Imágenes / Radiología** — DICOM, órdenes de imagen | Media | Integración externa (PACS/RIS) recomendada |
+| **Urgencias / Triage Manchester** — gestión sala emergencias | Media | Triaje básico disponible en Encounter.triageLevel |
+| **UCI / Monitoreo** — signos vitales continuos | Media | Vital signs básicos disponibles en Observation |
+| **Facturación / Liquidación** — tarifarios, cuentas corrientes | Media | — |
+| **Consentimientos informados** — firmas digitales, formularios | Baja | — |
+| **Estadísticas hospitalarias** — GRD, estancia media, indicadores | Baja | — |
+| **Notificaciones epidemiológicas** — declaración obligatoria | Baja | — |
 
-> Los módulos de alta prioridad (Laboratorio, Farmacia, Quirófano) normalmente se integran vía APIs externas (LIS, SIF, PACS) en sistemas hospitalarios maduros, no como desarrollo propio.
+> Los módulos de alta prioridad marcados como "Integración externa" normalmente se conectan vía APIs (HL7 v2, FHIR, DICOM) con sistemas especializados (LIS, SIF, PACS) en hospitales maduros, no se desarrollan nativamente.

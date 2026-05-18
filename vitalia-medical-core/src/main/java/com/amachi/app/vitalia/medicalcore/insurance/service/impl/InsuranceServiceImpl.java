@@ -22,6 +22,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @TenantAware
 @RequiredArgsConstructor
@@ -78,6 +80,11 @@ public class InsuranceServiceImpl
 
     @Override
     protected Insurance mapToEntity(InsuranceDto dto) { return mapper.toEntity(dto); }
+
+    @Override
+    public List<Insurance> getInsurancesByPatient(Long patientId) {
+        return repository.findByMedicalHistoryPatientIdAndTenantId(patientId, TenantContext.getTenantId());
+    }
 
     @Override
     protected void publishCreatedEvent(Insurance entity) { }

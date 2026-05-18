@@ -11,6 +11,7 @@ import com.amachi.app.vitalia.medicalcore.encounter.entity.Encounter;
 import com.amachi.app.vitalia.medicalcore.infrastructure.entity.Bed;
 import com.amachi.app.vitalia.medicalcore.infrastructure.entity.DepartmentUnit;
 import com.amachi.app.vitalia.medicalcore.infrastructure.entity.Room;
+import com.amachi.app.vitalia.medicalcore.insurance.entity.Insurance;
 import com.amachi.app.vitalia.medicalcore.nurse.entity.Nurse;
 import com.amachi.app.vitalia.medicalcore.patient.entity.Patient;
 import jakarta.persistence.*;
@@ -63,6 +64,10 @@ public class Hospitalization extends AuditableTenantEntity implements Model {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "FK_ID_BED", foreignKey = @ForeignKey(name = "FK_MED_HOSP_BED"))
     private Bed bed;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "FK_ID_INSURANCE", foreignKey = @ForeignKey(name = "FK_MED_HOSP_INSURANCE"))
+    private Insurance insurance;
 
     @Column(name = "ADMISSION_DATE", nullable = false)
     private OffsetDateTime admissionDate;

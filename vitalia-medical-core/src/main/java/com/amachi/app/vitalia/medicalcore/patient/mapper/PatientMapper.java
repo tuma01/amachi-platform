@@ -67,5 +67,12 @@ public interface PatientMapper extends EntityDtoMapper<Patient, PatientDto> {
         if (entity.getDetails() == null) {
             entity.setDetails(new PatientDetails());
         }
+        // HAS_DISABILITY y IS_PREGNANT son NOT NULL en BD — inicializar a false si el form no los envía
+        if (entity.getDetails().getHasDisability() == null) {
+            entity.getDetails().setHasDisability(false);
+        }
+        if (entity.getDetails().getIsPregnant() == null) {
+            entity.getDetails().setIsPregnant(false);
+        }
     }
 }

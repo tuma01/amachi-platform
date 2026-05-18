@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ public class BootstrapRunner {
 
     @EventListener(ApplicationReadyEvent.class)
     @Transactional
+    @Order(1)
     public void onApplicationReady() {
         log.info("🔹 Running Bootstrap Process..");
         try {

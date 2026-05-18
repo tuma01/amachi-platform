@@ -17,8 +17,10 @@ import com.amachi.app.vitalia.medicalcore.patient.mapper.PatientMapper;
 import com.amachi.app.vitalia.medicalcore.patient.repository.PatientRepository;
 import com.amachi.app.vitalia.medicalcore.patient.service.PatientService;
 import com.amachi.app.vitalia.medicalcore.patient.specification.PatientSpecification;
-import lombok.Getter;
+import com.amachi.app.vitalia.medicalcatalog.bloodtype.repository.BloodTypeRepository;
+import com.amachi.app.core.domain.mapper.PersonMapper;
 import lombok.RequiredArgsConstructor;
+import java.util.Optional;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +37,10 @@ public class PatientServiceImpl extends BaseService<Patient, PatientDto, Patient
 
     private final PatientRepository repository;
     private final PatientMapper mapper;
+    private final PersonMapper personMapper;
     private final DomainEventPublisher eventPublisher;
     private final PersonRepository personRepository;
+    private final BloodTypeRepository bloodTypeRepository;
 
     @Override
     protected CommonRepository<Patient, Long> getRepository() {
@@ -52,37 +56,51 @@ public class PatientServiceImpl extends BaseService<Patient, PatientDto, Patient
     @Transactional
     public Patient create(PatientDto dto) {
         if (dto == null) throw new BusinessException("Patient data cannot be null");
-        
+
         // 1. Mapear DTO a Entidad
         Patient entity = mapToEntity(dto);
+        resolveBloodType(entity, dto.getBloodTypeId());
 
-        // 2. Manejo de Identidad (Simple/Local para Fase 1)
-        // Vinculamos la Person directamente sin forzar resolución global atómica aún.
-        if (entity.getPerson() == null || entity.getPerson().getId() == null) {
-            throw new BusinessException("Patient identity (Person) is required");
-        }
-
-        Long personId = entity.getPerson().getId();
-
-        Person managedPerson = personRepository.findById(personId)
-                .orElseThrow(() -> new BusinessException("Person not found with id: " + personId));
-
+        // 2. Resolver Person — Protocolo de Resolución de Identidad (sección 23.D del guide)
+        Person managedPerson = resolveOrCreatePerson(dto);
         entity.setPerson(managedPerson);
 
-        // 3. Obtener tenant desde contexto (fuente única)
+        // 3. Validación de unicidad por tenant
         Long tenantId = TenantContext.getTenantId();
-
-        // 4. Validación de Unicidad Local
-        if (repository.existsByPersonIdAndTenantId(entity.getPerson().getId(), tenantId)) {
+        if (repository.existsByPersonIdAndTenantId(managedPerson.getId(), tenantId)) {
             throw new BusinessException("A patient with this identity already exists in this hospital.");
         }
 
-        // 5. Persistencia (tenant se asigna en @PrePersist)
+        // 4. Persistencia (tenant se asigna en @PrePersist)
         Patient saved = repository.save(entity);
-        
-        // 6. Publicación de Evento (Opcional en esta fase, pero mantenida por compatibilidad)
         publishCreatedEvent(saved);
         return saved;
+    }
+
+    /**
+     * Protocolo de Resolución de Identidad:
+     * 1. Si llega person.id → buscar persona existente por ID.
+     * 2. Si llega person.nationalId → buscar por cédula/documento para evitar duplicados.
+     * 3. Si no existe → crear nueva Person con los datos del formulario.
+     */
+    private Person resolveOrCreatePerson(PatientDto dto) {
+        if (dto.getPerson() == null) {
+            throw new BusinessException("Patient identity (Person) is required");
+        }
+
+        if (dto.getPerson().getId() != null) {
+            return personRepository.findById(dto.getPerson().getId())
+                    .orElseThrow(() -> new BusinessException("Person not found with id: " + dto.getPerson().getId()));
+        }
+
+        if (dto.getPerson().getNationalId() != null) {
+            Optional<Person> existing = personRepository.findByNationalId(dto.getPerson().getNationalId());
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
+
+        return personRepository.save(personMapper.toEntity(dto.getPerson()));
     }
 
     @Override
@@ -98,27 +116,27 @@ public class PatientServiceImpl extends BaseService<Patient, PatientDto, Patient
     @Override
     protected void mergeEntities(PatientDto dto, Patient existing) {
 
-        // 1. Guardar person actual
-        Long currentPersonId = existing.getPerson() != null ? existing.getPerson().getId() : null;
-
-        // 2. Aplicar update parcial
+        // 1. Aplicar update parcial de campos clínicos del paciente
         mapper.updateEntityFromDto(dto, existing);
+        resolveBloodType(existing, dto.getBloodTypeId());
 
-        // 3. Resolver person desde DTO
-        if (dto.getPerson() != null && dto.getPerson().getId() != null) {
-            Long newPersonId = dto.getPerson().getId();
+        // 2. Actualizar datos de la Person vinculada (nombre, email, teléfono, etc.)
+        if (dto.getPerson() != null && existing.getPerson() != null) {
+            personMapper.updateEntityFromDto(dto.getPerson(), existing.getPerson());
+        }
+    }
 
-            // solo si cambió
-            if (!newPersonId.equals(currentPersonId)) {
-                Person managedPerson = personRepository.findById(newPersonId)
-                        .orElseThrow(() -> new BusinessException("Person not found with id: " + newPersonId));
-
-                Long tenantId = TenantContext.getTenantId();
-                if (repository.existsByPersonIdAndTenantId(newPersonId, tenantId)) {
-                    throw new BusinessException("A patient with this identity already exists in this hospital.");
-                }
-                existing.setPerson(managedPerson);
-            }
+    /**
+     * Reemplaza el objeto BloodType transient generado por MapStruct con una referencia
+     * JPA gestionada obtenida vía getReferenceById(). Esto evita TransientObjectException
+     * cuando Hibernate intenta hacer flush de la asociación @ManyToOne.
+     */
+    private void resolveBloodType(Patient patient, Long bloodTypeId) {
+        if (patient.getDetails() == null) return;
+        if (bloodTypeId != null) {
+            patient.getDetails().setBloodType(bloodTypeRepository.getReferenceById(bloodTypeId));
+        } else {
+            patient.getDetails().setBloodType(null);
         }
     }
 
